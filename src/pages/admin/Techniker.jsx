@@ -41,6 +41,8 @@ export default function Techniker() {
     }
     setSpeichern(true)
     setFehler('')
+      console.log('Anlegen mit UUID:', neu.user_id)  // ← hier
+
 
     const { error } = await supabase.from('techniker').insert({
       id: neu.user_id,
