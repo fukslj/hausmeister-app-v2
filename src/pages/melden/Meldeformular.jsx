@@ -60,6 +60,16 @@ export default function Meldeformular() {
     await supabase.auth.signInAnonymously()
   }
 
+    const { data: { session } } = await supabase.auth.getSession()
+if (!session) {
+  const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
+  if (anonError) {
+    setFehler('Anon Login Fehler: ' + anonError.message)
+    setSenden(false)
+    return
+  }
+}
+    
   const { data: meldung, error } = await supabase
     .from('meldung')
     .insert({
