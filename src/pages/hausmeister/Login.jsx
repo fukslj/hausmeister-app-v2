@@ -128,7 +128,7 @@ export default function HausmeisterLogin() {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, maxWidth: 220, margin: '0 auto 20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, width: '100%', maxWidth: 280, margin: '0 auto 20px' }}>
           {['1','2','3','4','5','6','7','8','9','','0','del'].map((k, i) => (
             k === '' ? <div key={i} /> :
             <button key={i} className="hm-num-btn" onClick={() => pressNum(k)}
