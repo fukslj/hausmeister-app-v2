@@ -10,10 +10,7 @@ export default function Dashboard() {
   const [objekte, setObjekte] = useState([])
   const [laden, setLaden] = useState(true)
   const [filter, setFilter] = useState('alle')
-
-  useEffect(() => {
-    console.log('Profil:', profil)
-  }, [profil])
+  const [aktivesObjekt, setAktivesObjekt] = useState(null)
 
   useEffect(() => {
     if (profil?.id) ladeDaten()
@@ -21,29 +18,30 @@ export default function Dashboard() {
 
   async function ladeDaten() {
     setLaden(true)
-    
-    const { data: { user } } = await supabase.auth.getUser()
-      
-    const { data: m, error } = await supabase
+    const { data: m } = await supabase
       .from('meldung')
-      .select('*, eingang(bezeichnung, objekt(strasse, hausnummer)), meldung_techniker(techniker_id)')
+      .select('*, eingang(bezeichnung, objekt_id, objekt(strasse, hausnummer)), meldung_techniker(techniker_id)')
       .order('erstellt_am', { ascending: false })
-      
     const { data: z } = await supabase
       .from('verwaltungszugang')
       .select('objekt(id, strasse, hausnummer)')
       .eq('hausverwaltung_id', profil?.id)
-      
     setMeldungen(m || [])
     setObjekte(z?.map(z => z.objekt) || [])
     setLaden(false)
   }
 
   function gefilterteMeldungen() {
-    if (filter === 'offen') return meldungen.filter(m => m.status === 'offen')
-    if (filter === 'in_arbeit') return meldungen.filter(m => m.status === 'in_arbeit')
-    if (filter === 'erledigt') return meldungen.filter(m => m.status === 'erledigt')
-    return meldungen
+    let liste = meldungen
+
+    if (aktivesObjekt) {
+      liste = liste.filter(m => m.eingang?.objekt_id === aktivesObjekt)
+    }
+
+    if (filter === 'offen') return liste.filter(m => m.status === 'offen')
+    if (filter === 'in_arbeit') return liste.filter(m => m.status === 'in_arbeit')
+    if (filter === 'erledigt') return liste.filter(m => m.status === 'erledigt')
+    return liste
   }
 
   function statusBadge(m) {
@@ -75,6 +73,7 @@ export default function Dashboard() {
 
       <div style={{ padding: 20, maxWidth: 480, margin: '0 auto' }}>
 
+        {/* Metriken */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
           {[
             { label: 'Offen', value: offenAnzahl, color: '#856404' },
@@ -88,12 +87,26 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Meine Objekte */}
         {objekte.length > 0 && (
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#888780', marginBottom: 10 }}>Meine Objekte</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div
+                onClick={() => setAktivesObjekt(null)}
+                style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, cursor: 'pointer',
+                  background: aktivesObjekt === null ? '#534AB7' : '#EEEDFE',
+                  color: aktivesObjekt === null ? '#EEEDFE' : '#534AB7',
+                  border: '0.5px solid #AFA9EC' }}>
+                Alle
+              </div>
               {objekte.map(o => (
-                <div key={o.id} style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: '#EEEDFE', border: '0.5px solid #AFA9EC', color: '#534AB7' }}>
+                <div key={o.id}
+                  onClick={() => setAktivesObjekt(aktivesObjekt === o.id ? null : o.id)}
+                  style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, cursor: 'pointer',
+                    background: aktivesObjekt === o.id ? '#534AB7' : '#EEEDFE',
+                    color: aktivesObjekt === o.id ? '#EEEDFE' : '#534AB7',
+                    border: '0.5px solid #AFA9EC' }}>
                   {o.strasse} {o.hausnummer}
                 </div>
               ))}
@@ -101,6 +114,7 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Filter */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
           {['alle', 'offen', 'in_arbeit', 'erledigt'].map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
@@ -115,6 +129,7 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Meldungsliste */}
         {laden ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Laden…</div>
         ) : gefiltert.length === 0 ? (
