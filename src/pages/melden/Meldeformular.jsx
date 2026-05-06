@@ -43,54 +43,60 @@ export default function Meldeformular() {
   }
 
   async function absenden(e) {
-    e.preventDefault()
-    if (!name.trim()) { setFehler('Bitte geben Sie Ihren Namen ein'); return }
-    setSenden(true)
-    setFehler('')
+  e.preventDefault()
+  if (!name.trim()) { setFehler('Bitte geben Sie Ihren Namen ein'); return }
+  setSenden(true)
+  setFehler('')
 
-    if (!eingang?.id) {
-      setFehler('Kein Eingang gefunden')
-      setSenden(false)
-      return
-    }
-
-    const { data: meldung, error } = await supabase
-      .from('meldung')
-      .insert({
-        eingang_id: eingang.id,
-        melder_name: name.trim(),
-        beschreibung: beschreibung.trim() || null,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      setFehler('Fehler: ' + error.message + ' | Code: ' + error.code)
-      setSenden(false)
-      return
-    }
-
-    for (const foto of fotos) {
-      const ext = foto.file.name.split('.').pop()
-      const pfad = `${meldung.id}/${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage
-        .from('meldung-fotos')
-        .upload(pfad, foto.file)
-      if (!uploadError) {
-        const { data: { publicUrl } } = supabase.storage
-          .from('meldung-fotos')
-          .getPublicUrl(pfad)
-        await supabase.from('meldung_foto').insert({
-          meldung_id: meldung.id,
-          url: publicUrl,
-          hochgeladen_von: 'mieter',
-        })
-      }
-    }
-
+  if (!eingang?.id) {
+    setFehler('Kein Eingang gefunden')
     setSenden(false)
-    navigate(`/melden/${qrToken}/bestaetigung`, { state: { name, beschreibung } })
+    return
   }
+
+  // Anonym einloggen falls noch nicht eingeloggt
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    await supabase.auth.signInAnonymously()
+  }
+
+  const { data: meldung, error } = await supabase
+    .from('meldung')
+    .insert({
+      eingang_id: eingang.id,
+      melder_name: name.trim(),
+      beschreibung: beschreibung.trim() || null,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    setFehler('Fehler: ' + error.message + ' | Code: ' + error.code)
+    setSenden(false)
+    return
+  }
+
+  for (const foto of fotos) {
+    const ext = foto.file.name.split('.').pop()
+    const pfad = `${meldung.id}/${Date.now()}.${ext}`
+    const { error: uploadError } = await supabase.storage
+      .from('meldung-fotos')
+      .upload(pfad, foto.file)
+    if (!uploadError) {
+      const { data: { publicUrl } } = supabase.storage
+        .from('meldung-fotos')
+        .getPublicUrl(pfad)
+      await supabase.from('meldung_foto').insert({
+        meldung_id: meldung.id,
+        url: publicUrl,
+        hochgeladen_von: 'mieter',
+      })
+    }
+  }
+
+  setSenden(false)
+  navigate(`/melden/${qrToken}/bestaetigung`, { state: { name, beschreibung } })
+}
 
   if (laden) return <div style={{ padding: 40, fontFamily: 'var(--font)', textAlign: 'center', color: '#888780' }}>Laden…</div>
 
