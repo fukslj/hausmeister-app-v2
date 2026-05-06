@@ -58,7 +58,7 @@ export default function Meldeformular() {
       .select()
       .single()
 
-    if (error) { setFehler('Fehler beim Senden. Bitte nochmal versuchen.'); setSenden(false); return }
+    if (error) { setFehler('Fehler: ' + error.message); setSenden(false); return }
 
     // Fotos hochladen
     for (const foto of fotos) {
