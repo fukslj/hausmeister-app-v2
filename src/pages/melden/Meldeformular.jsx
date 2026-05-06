@@ -43,56 +43,50 @@ export default function Meldeformular() {
   }
 
   async function absenden(e) {
-  e.preventDefault()
-  if (!name.trim()) { setFehler('Bitte geben Sie Ihren Namen ein'); return }
-  setSenden(true)
-  setFehler('')
+    e.preventDefault()
+    if (!name.trim()) { setFehler('Bitte geben Sie Ihren Namen ein'); return }
+    setSenden(true)
+    setFehler('')
 
-  // Eingang prüfen
-  if (!eingang?.id) {
-    setFehler('Kein Eingang gefunden: ' + JSON.stringify(eingang))
-    setSenden(false)
-    return
-  }
-
-  const { data: meldung, error } = await supabase
-    .from('meldung')
-    .insert({
-      eingang_id: eingang.id,
-      melder_name: name.trim(),
-      beschreibung: beschreibung.trim() || null,
-    })
-    .select()
-    .single()
-
-  if (error) {
-    setFehler('Fehler: ' + error.message + ' | Code: ' + error.code + ' | Details: ' + JSON.stringify(error.details))
-    setSenden(false)
-    return
-  }
-
-  // Fotos hochladen
-  for (const foto of fotos) {
-    const ext = foto.file.name.split('.').pop()
-    const pfad = `${meldung.id}/${Date.now()}.${ext}`
-    const { error: uploadError } = await supabase.storage
-      .from('meldung-fotos')
-      .upload(pfad, foto.file)
-    if (!uploadError) {
-      const { data: { publicUrl } } = supabase.storage
-        .from('meldung-fotos')
-        .getPublicUrl(pfad)
-      await supabase.from('meldung_foto').insert({
-        meldung_id: meldung.id,
-        url: publicUrl,
-        hochgeladen_von: 'mieter',
-      })
+    if (!eingang?.id) {
+      setFehler('Kein Eingang gefunden')
+      setSenden(false)
+      return
     }
-  }
 
-  setSenden(false)
-  navigate(`/melden/${qrToken}/bestaetigung`, { state: { name, beschreibung } })
-}
+    const { data: meldung, error } = await supabase
+      .from('meldung')
+      .insert({
+        eingang_id: eingang.id,
+        melder_name: name.trim(),
+        beschreibung: beschreibung.trim() || null,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      setFehler('Fehler: ' + error.message + ' | Code: ' + error.code)
+      setSenden(false)
+      return
+    }
+
+    for (const foto of fotos) {
+      const ext = foto.file.name.split('.').pop()
+      const pfad = `${meldung.id}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('meldung-fotos')
+        .upload(pfad, foto.file)
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('meldung-fotos')
+          .getPublicUrl(pfad)
+        await supabase.from('meldung_foto').insert({
+          meldung_id: meldung.id,
+          url: publicUrl,
+          hochgeladen_von: 'mieter',
+        })
+      }
+    }
 
     setSenden(false)
     navigate(`/melden/${qrToken}/bestaetigung`, { state: { name, beschreibung } })
@@ -146,7 +140,6 @@ export default function Meldeformular() {
               Fotos <span style={{ fontWeight: 400, color: '#888780' }}>optional · max. {MAX_FOTOS}</span>
             </label>
 
-            {/* Foto-Vorschau */}
             {fotos.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 4 }}>
                 {fotos.map((f, i) => (
@@ -158,7 +151,6 @@ export default function Meldeformular() {
               </div>
             )}
 
-            {/* Upload Button */}
             {fotos.length < MAX_FOTOS && (
               <label style={{ width: '100%', height: 80, borderRadius: 10, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.3 }}>
