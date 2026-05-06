@@ -132,7 +132,7 @@ export default function HausmeisterLogin() {
           {['1','2','3','4','5','6','7','8','9','','0','del'].map((k, i) => (
             k === '' ? <div key={i} /> :
             <button key={i} className="hm-num-btn" onClick={() => pressNum(k)}
-              style={{ height: 48, borderRadius: 10, background: '#F8F7F2', border: '0.5px solid #D3D1C7', fontSize: k === 'del' ? 14 : 18, fontWeight: 500, color: k === 'del' ? '#888780' : '#1A1A18', fontFamily: 'var(--font)' }}>
+              style={{ height: 56, borderRadius: 10, background: '#F8F7F2', border: '0.5px solid #D3D1C7', fontSize: k === 'del' ? 14 : 18, fontWeight: 500, color: k === 'del' ? '#888780' : '#1A1A18', fontFamily: 'var(--font)' }}>
               {k === 'del' ? '⌫' : k}
             </button>
           ))}
