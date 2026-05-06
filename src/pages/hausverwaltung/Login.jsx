@@ -27,8 +27,15 @@ export default function HausverwaltungLogin() {
 
   return (
     <div style={{ fontFamily: 'var(--font)', minHeight: '100vh', display: 'flex' }}>
+      <style>{`
+        @media (max-width: 600px) {
+          .hv-left { display: none !important; }
+          .hv-right { flex: 1 !important; padding: 40px 24px !important; }
+        }
+      `}</style>
+
       {/* Links */}
-      <div style={{ flex: 1, background: 'var(--hv-bg)', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <div className="hv-left" style={{ flex: 1, background: 'var(--hv-bg)', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
           <span onClick={() => navigate('/')} style={{ fontSize: 12, color: '#534AB7', cursor: 'pointer' }}>← Zurück</span>
           <div style={{ width: 64, height: 64, borderRadius: 14, background: '#CECBF6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '40px 0 24px' }}>
@@ -45,7 +52,8 @@ export default function HausverwaltungLogin() {
       </div>
 
       {/* Rechts */}
-      <div style={{ flex: 1, background: 'white', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div className="hv-right" style={{ flex: 1, background: 'white', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <span onClick={() => navigate('/')} style={{ fontSize: 12, color: '#534AB7', cursor: 'pointer', display: 'none', marginBottom: 32 }} className="hv-back-mobile">← Zurück</span>
         <div style={{ fontSize: 20, fontWeight: 500, color: '#1A1A18', marginBottom: 6 }}>Anmelden</div>
         <div style={{ fontSize: 13, color: '#888780', marginBottom: 32 }}>Geben Sie Ihre Zugangsdaten ein</div>
 
