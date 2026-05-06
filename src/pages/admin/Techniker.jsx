@@ -5,9 +5,10 @@ import { supabase } from '../../lib/supabase'
 export default function Techniker() {
   const navigate = useNavigate()
   const [techniker, setTechniker] = useState([])
+  const [services, setServices] = useState([])
   const [laden, setLaden] = useState(true)
   const [formOffen, setFormOffen] = useState(false)
-  const [neu, setNeu] = useState({ name: '', pin: '', rolle: 'techniker', user_id: '' })
+  const [neu, setNeu] = useState({ name: '', pin: '', rolle: 'techniker', user_id: '', service_id: '' })
   const [speichern, setSpeichern] = useState(false)
   const [fehler, setFehler] = useState('')
   const [schritt, setSchritt] = useState(1)
@@ -15,11 +16,19 @@ export default function Techniker() {
   const [bearbeitenWert, setBearbeitenWert] = useState({})
   const [loeschenId, setLoeschenId] = useState(null)
 
-  useEffect(() => { ladeTechniker() }, [])
+  useEffect(() => { ladeTechniker(); ladeServices() }, [])
+
+  async function ladeServices() {
+    const { data } = await supabase.from('hausmeisterservice').select('id, name').order('name')
+    setServices(data || [])
+  }
 
   async function ladeTechniker() {
     setLaden(true)
-    const { data } = await supabase.from('techniker').select('*').order('name')
+    const { data } = await supabase
+      .from('techniker')
+      .select('*, hausmeisterservice(name)')
+      .order('name')
     setTechniker(data || [])
     setLaden(false)
   }
@@ -33,16 +42,9 @@ export default function Techniker() {
     setSpeichern(true)
     setFehler('')
 
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: admin } = await supabase
-      .from('techniker')
-      .select('service_id')
-      .eq('id', user.id)
-      .single()
-
     const { error } = await supabase.from('techniker').insert({
       id: neu.user_id,
-      service_id: admin.service_id,
+      service_id: neu.service_id,
       name: neu.name,
       pin_hash: neu.pin,
       rolle: neu.rolle,
@@ -50,7 +52,7 @@ export default function Techniker() {
 
     if (error) { setFehler('Fehler: ' + error.message); setSpeichern(false); return }
 
-    setNeu({ name: '', pin: '', rolle: 'techniker', user_id: '' })
+    setNeu({ name: '', pin: '', rolle: 'techniker', user_id: '', service_id: '' })
     setFormOffen(false)
     setSchritt(1)
     setSpeichern(false)
@@ -62,6 +64,7 @@ export default function Techniker() {
       name: bearbeitenWert.name,
       pin_hash: bearbeitenWert.pin_hash,
       rolle: bearbeitenWert.rolle,
+      service_id: bearbeitenWert.service_id,
     }).eq('id', id)
     setBearbeitenId(null)
     ladeTechniker()
@@ -69,7 +72,6 @@ export default function Techniker() {
 
   async function technikerLoeschen(id) {
     await supabase.from('techniker').delete().eq('id', id)
-    await supabase.auth.admin.deleteUser(id).catch(() => {})
     setLoeschenId(null)
     ladeTechniker()
   }
@@ -99,7 +101,6 @@ export default function Techniker() {
 
       <div style={{ padding: 20, maxWidth: 480, margin: '0 auto' }}>
 
-        {/* Neuer Techniker */}
         {formOffen && (
           <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20, marginBottom: 20 }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 4 }}>Neuer Techniker</div>
@@ -126,6 +127,12 @@ export default function Techniker() {
                   <input style={inputStyle} placeholder="Name des Technikers" value={neu.name} onChange={e => setNeu({...neu, name: e.target.value})} required />
                   <input style={inputStyle} placeholder="PIN (4 Ziffern)" maxLength={4} value={neu.pin} onChange={e => setNeu({...neu, pin: e.target.value.replace(/\D/g, '')})} required />
                   <input style={inputStyle} placeholder="UUID aus Supabase einfügen" value={neu.user_id} onChange={e => setNeu({...neu, user_id: e.target.value.trim()})} required />
+                  <select style={inputStyle} value={neu.service_id} onChange={e => setNeu({...neu, service_id: e.target.value})} required>
+                    <option value="">Firma auswählen…</option>
+                    {services.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
                   <select style={inputStyle} value={neu.rolle} onChange={e => setNeu({...neu, rolle: e.target.value})}>
                     <option value="techniker">Techniker</option>
                     <option value="admin">Admin</option>
@@ -143,7 +150,6 @@ export default function Techniker() {
           </div>
         )}
 
-        {/* Liste */}
         {laden ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Laden…</div>
         ) : techniker.length === 0 ? (
@@ -157,6 +163,12 @@ export default function Techniker() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <input style={inputStyle} value={bearbeitenWert.name} onChange={e => setBearbeitenWert({...bearbeitenWert, name: e.target.value})} placeholder="Name" />
                     <input style={inputStyle} value={bearbeitenWert.pin_hash} onChange={e => setBearbeitenWert({...bearbeitenWert, pin_hash: e.target.value.replace(/\D/g, '').slice(0, 4)})} placeholder="PIN (4 Ziffern)" maxLength={4} />
+                    <select style={inputStyle} value={bearbeitenWert.service_id} onChange={e => setBearbeitenWert({...bearbeitenWert, service_id: e.target.value})}>
+                      <option value="">Firma auswählen…</option>
+                      {services.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
                     <select style={inputStyle} value={bearbeitenWert.rolle} onChange={e => setBearbeitenWert({...bearbeitenWert, rolle: e.target.value})}>
                       <option value="techniker">Techniker</option>
                       <option value="admin">Admin</option>
@@ -179,13 +191,15 @@ export default function Techniker() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>{t.name}</div>
-                      <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>{t.rolle === 'admin' ? 'Admin' : 'Techniker'} · PIN: {t.pin_hash}</div>
+                      <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>
+                        {t.rolle === 'admin' ? 'Admin' : 'Techniker'} · PIN: {t.pin_hash} · {t.hausmeisterservice?.name || '—'}
+                      </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <button onClick={() => aktivToggle(t)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: t.aktiv ? '#E8F5E9' : '#F1EFE8', color: t.aktiv ? '#2E7D32' : '#888780', border: `0.5px solid ${t.aktiv ? '#A5D6A7' : '#D3D1C7'}`, cursor: 'pointer' }}>
                         {t.aktiv ? 'Aktiv' : 'Inaktiv'}
                       </button>
-                      <button onClick={() => { setBearbeitenId(t.id); setBearbeitenWert({ name: t.name, pin_hash: t.pin_hash, rolle: t.rolle }) }} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>Bearbeiten</button>
+                      <button onClick={() => { setBearbeitenId(t.id); setBearbeitenWert({ name: t.name, pin_hash: t.pin_hash, rolle: t.rolle, service_id: t.service_id }) }} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>Bearbeiten</button>
                       <button onClick={() => setLoeschenId(t.id)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>Löschen</button>
                     </div>
                   </div>
