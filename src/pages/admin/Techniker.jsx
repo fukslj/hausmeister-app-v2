@@ -144,4 +144,129 @@ export default function Techniker() {
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setFormOffen(false)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
-                  <button onClick={() => setSchritt(2)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>Weiter →</button
+                  <button onClick={() => setSchritt(2)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>Weiter →</button>
+                </div>
+              </div>
+            )}
+
+            {schritt === 2 && (
+              <form onSubmit={technikerAnlegen}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, marginTop: 12 }}>
+                  <input style={inputStyle} placeholder="Name des Technikers" value={neu.name} onChange={e => setNeu({...neu, name: e.target.value})} required />
+                  <input style={inputStyle} placeholder="PIN (4 Ziffern)" maxLength={4} value={neu.pin} onChange={e => setNeu({...neu, pin: e.target.value.replace(/\D/g, '')})} required />
+                  <input style={inputStyle} placeholder="UUID aus Supabase einfügen" value={neu.user_id} onChange={e => setNeu({...neu, user_id: e.target.value.trim()})} required />
+                  <select style={inputStyle} value={neu.service_id} onChange={e => setNeu({...neu, service_id: e.target.value})} required>
+                    <option value="">Firma auswählen…</option>
+                    {services.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                  <select style={inputStyle} value={neu.rolle} onChange={e => setNeu({...neu, rolle: e.target.value})}>
+                    <option value="techniker">Techniker</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                {fehler && <div style={{ fontSize: 12, color: '#C0392B', padding: '8px 12px', background: '#FDECEB', borderRadius: 8, marginBottom: 12 }}>{fehler}</div>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setSchritt(1)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>← Zurück</button>
+                  <button type="submit" disabled={speichern} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>
+                    {speichern ? 'Wird gespeichert…' : 'Speichern'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* Objektzuweisung */}
+        {objektZuweisungId && (
+          <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>Objekte zuweisen</div>
+              <button onClick={() => setObjektZuweisungId(null)} style={{ fontSize: 12, color: '#888780', background: 'none', border: 'none', cursor: 'pointer' }}>Schließen</button>
+            </div>
+            {objekte.length === 0 ? (
+              <div style={{ fontSize: 13, color: '#888780' }}>Keine Objekte vorhanden</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {objekte.map(o => {
+                  const hatZuweisung = zugewieseneObjekte.some(z => z.objekt_id === o.id)
+                  return (
+                    <div key={o.id} onClick={() => objektToggle(o.id)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 8, background: hatZuweisung ? '#E8F5E9' : '#F8F7F2', border: `0.5px solid ${hatZuweisung ? '#A5D6A7' : '#D3D1C7'}`, cursor: 'pointer' }}>
+                      <span style={{ fontSize: 13, color: '#2C2C2A' }}>{o.strasse} {o.hausnummer}</span>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: hatZuweisung ? '#2E7D32' : '#888780' }}>{hatZuweisung ? '✓ Zugewiesen' : '+ Zuweisen'}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Liste */}
+        {laden ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Laden…</div>
+        ) : techniker.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Noch keine Techniker angelegt</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {techniker.map(t => (
+              <div key={t.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '16px 20px' }}>
+
+                {bearbeitenId === t.id ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <input style={inputStyle} value={bearbeitenWert.name} onChange={e => setBearbeitenWert({...bearbeitenWert, name: e.target.value})} placeholder="Name" />
+                    <input style={inputStyle} value={bearbeitenWert.pin_hash} onChange={e => setBearbeitenWert({...bearbeitenWert, pin_hash: e.target.value.replace(/\D/g, '').slice(0, 4)})} placeholder="PIN (4 Ziffern)" maxLength={4} />
+                    <select style={inputStyle} value={bearbeitenWert.service_id} onChange={e => setBearbeitenWert({...bearbeitenWert, service_id: e.target.value})}>
+                      <option value="">Firma auswählen…</option>
+                      {services.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    <select style={inputStyle} value={bearbeitenWert.rolle} onChange={e => setBearbeitenWert({...bearbeitenWert, rolle: e.target.value})}>
+                      <option value="techniker">Techniker</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button onClick={() => setBearbeitenId(null)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+                      <button onClick={() => technikerSpeichern(t.id)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>Speichern</button>
+                    </div>
+                  </div>
+                ) : loeschenId === t.id ? (
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#C0392B', marginBottom: 6 }}>{t.name} wirklich löschen?</div>
+                    <div style={{ fontSize: 12, color: '#888780', marginBottom: 12 }}>Der Techniker verliert sofort den Zugang zur App.</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setLoeschenId(null)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+                      <button onClick={() => technikerLoeschen(t.id)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#C0392B', color: 'white', border: 'none', fontSize: 13, cursor: 'pointer' }}>Ja, löschen</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>{t.name}</div>
+                        <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>
+                          {t.rolle === 'admin' ? 'Admin' : 'Techniker'} · PIN: {t.pin_hash} · {t.hausmeisterservice?.name || '—'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button onClick={() => aktivToggle(t)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: t.aktiv ? '#E8F5E9' : '#F1EFE8', color: t.aktiv ? '#2E7D32' : '#888780', border: `0.5px solid ${t.aktiv ? '#A5D6A7' : '#D3D1C7'}`, cursor: 'pointer' }}>
+                          {t.aktiv ? 'Aktiv' : 'Inaktiv'}
+                        </button>
+                        <button onClick={() => ladeZugewieseneObjekte(t.id)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#E1F5EE', color: '#085041', border: '0.5px solid #9FE1CB', cursor: 'pointer' }}>Objekte</button>
+                        <button onClick={() => { setBearbeitenId(t.id); setBearbeitenWert({ name: t.name, pin_hash: t.pin_hash, rolle: t.rolle, service_id: t.service_id }) }} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>Bearbeiten</button>
+                        <button onClick={() => setLoeschenId(t.id)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>Löschen</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
