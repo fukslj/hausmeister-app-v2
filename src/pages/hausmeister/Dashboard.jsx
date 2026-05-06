@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { registerPush } from '../../lib/push'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -10,7 +11,12 @@ export default function Dashboard() {
   const [laden, setLaden] = useState(true)
   const [filter, setFilter] = useState('alle')
 
-  useEffect(() => { ladeMeldungen() }, [])
+  useEffect(() => {
+  if (profil?.id) {
+    ladeMeldungen()
+    registerPush(supabase, profil.id)
+  }
+}, [profil])
 
   async function ladeMeldungen() {
     setLaden(true)
