@@ -185,4 +185,3 @@ export default function Meldeformular() {
       </div>
     </div>
   )
-}
