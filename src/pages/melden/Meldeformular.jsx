@@ -70,21 +70,20 @@ if (!session) {
   }
 }
     
-  const { data: meldung, error } = await supabase
-    .from('meldung')
-    .insert({
-      eingang_id: eingang.id,
-      melder_name: name.trim(),
-      beschreibung: beschreibung.trim() || null,
-    })
-    .select()
-    .single()
+  const { data: meldungId, error } = await supabase
+  .rpc('meldung_erstellen', {
+    p_eingang_id: eingang.id,
+    p_melder_name: name.trim(),
+    p_beschreibung: beschreibung.trim() || null,
+  })
 
-  if (error) {
-    setFehler('Fehler: ' + error.message + ' | Code: ' + error.code)
-    setSenden(false)
-    return
-  }
+if (error) {
+  setFehler('Fehler: ' + error.message + ' | Code: ' + error.code)
+  setSenden(false)
+  return
+}
+
+const meldung = { id: meldungId }
 
   for (const foto of fotos) {
     const ext = foto.file.name.split('.').pop()
