@@ -88,7 +88,18 @@ export default function HausverwaltungLogin() {
             <input className="hv-input" type="password" value={passwort} onChange={e => setPasswort(e.target.value)} placeholder="••••••••" required style={inputStyle} />
           </div>
 
-          <span style={{ fontSize: 12, color: '#7F77DD', textAlign: 'right', cursor: 'pointer' }}>Passwort vergessen?</span>
+         <span 
+  onClick={async () => {
+    if (!email) { alert('Bitte zuerst E-Mail-Adresse eingeben'); return }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://hausmeisterapp.facilityprofi.de/passwort-reset'
+    })
+    if (error) alert('Fehler: ' + error.message)
+    else alert('E-Mail wurde gesendet — bitte prüfen Sie Ihr Postfach')
+  }}
+  style={{ fontSize: 12, color: '#7F77DD', textAlign: 'right', cursor: 'pointer' }}>
+  Passwort vergessen?
+</span>
 
           {fehler && <div style={{ fontSize: 12, color: '#C0392B', padding: '8px 12px', background: 'rgba(255,255,255,0.7)', borderRadius: 8 }}>{fehler}</div>}
 
