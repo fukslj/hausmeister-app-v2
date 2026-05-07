@@ -15,6 +15,7 @@ import ObjektDetail from './pages/admin/ObjektDetail'
 import Techniker from './pages/admin/Techniker'
 import Hausverwaltungen from './pages/admin/Hausverwaltungen'
 import Services from './pages/admin/Services'
+import PasswortReset from './pages/PasswortReset'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -64,7 +65,7 @@ export default function App() {
           <MeldungDetail />
         </GeschuetzteRoute>
       } />
-
+      <Route path="/passwort-reset" element={<PasswortReset />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
