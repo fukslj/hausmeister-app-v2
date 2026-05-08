@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Meldungen() {
   const navigate = useNavigate()
   const [meldungen, setMeldungen] = useState([])
   const [laden, setLaden] = useState(true)
   const [filter, setFilter] = useState('alle')
+  const { profil } = useAuth()
 
-  useEffect(() => { ladeMeldungen() }, [])
+useEffect(() => { 
+  if (profil?.id) ladeMeldungen() 
+}, [profil])
 
   async function ladeMeldungen() {
     setLaden(true)
