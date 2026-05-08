@@ -11,8 +11,9 @@ export default function Meldungen() {
   const { profil } = useAuth()
 
 useEffect(() => { 
-  if (profil?.id) ladeMeldungen() 
-}, [profil])
+  console.log('Profil in Meldungen:', profil)
+  ladeMeldungen()
+}, [])
 
   async function ladeMeldungen() {
   setLaden(true)
