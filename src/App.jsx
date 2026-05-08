@@ -35,8 +35,7 @@ export default function App() {
       <Route path="/login/admin" element={<SuperadminLogin />} />
       <Route path="/melden/:qrToken" element={<Meldeformular />} />
       <Route path="/melden/:qrToken/bestaetigung" element={<Bestaetigung />} />
-      <Route path="meldungen" element={<Meldungen />} />
-
+      
       <Route path="/hausverwaltung" element={
         <GeschuetzteRoute erlaubteTypen={['hausverwaltung']}>
           <HausverwaltungDashboard />
