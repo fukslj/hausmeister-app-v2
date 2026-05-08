@@ -16,6 +16,7 @@ export default function MeldungDetail() {
   const [notiz, setNotiz] = useState('')
   const [neueFootos, setNeueFotos] = useState([])
   const [speichern, setSpeichern] = useState(false)
+  const [erledigtBestaetigung, setErledigtBestaetigung] = useState(false)
 
   useEffect(() => { ladeMeldung() }, [id])
 
@@ -173,11 +174,21 @@ console.log('Buckets:', buckets)
                 Aufgabe übernehmen
               </button>
             )}
-            {istMeine && (
-              <button onClick={erledigen} style={{ flex: 1, height: 44, borderRadius: 10, background: '#E8F5E9', color: '#2E7D32', fontSize: 14, fontWeight: 500, border: '0.5px solid #A5D6A7', cursor: 'pointer' }}>
-                Als erledigt markieren
-              </button>
-            )}
+            {istMeine && !erledigtBestaetigung && (
+  <button onClick={() => setErledigtBestaetigung(true)} style={{ flex: 1, height: 44, borderRadius: 10, background: '#E8F5E9', color: '#2E7D32', fontSize: 14, fontWeight: 500, border: '0.5px solid #A5D6A7', cursor: 'pointer' }}>
+    Als erledigt markieren
+  </button>
+)}
+{erledigtBestaetigung && (
+  <div style={{ flex: 1, display: 'flex', gap: 8 }}>
+    <button onClick={() => setErledigtBestaetigung(false)} style={{ flex: 1, height: 44, borderRadius: 10, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>
+      Abbrechen
+    </button>
+    <button onClick={() => { erledigen(); setErledigtBestaetigung(false) }} style={{ flex: 1, height: 44, borderRadius: 10, background: '#2E7D32', color: 'white', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+      ✓ Ja, erledigt
+    </button>
+  </div>
+)}
           </div>
         )}
 
