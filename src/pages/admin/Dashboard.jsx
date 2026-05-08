@@ -6,11 +6,12 @@ export default function Dashboard() {
   const { abmelden } = useAuth()
 
   const menuItems = [
-    { label: 'Hausmeisterservice', sub: 'Service anlegen und verwalten', icon: '🔧', path: '/admin/service' },
-    { label: 'Objekte', sub: 'Gebäude und Eingänge', icon: '🏢', path: '/admin/objekte' },
-    { label: 'Techniker', sub: 'Mitarbeiter und PINs', icon: '👷', path: '/admin/techniker' },
-    { label: 'Hausverwaltungen', sub: 'Zugänge und Zuweisung', icon: '🏠', path: '/admin/hausverwaltungen' },
-  ]
+  { label: 'Alle Meldungen', sub: 'Übersicht und Archivieren', icon: '📋', path: '/admin/meldungen' },
+  { label: 'Hausmeisterservice', sub: 'Service anlegen und verwalten', icon: '🔧', path: '/admin/service' },
+  { label: 'Objekte', sub: 'Gebäude und Eingänge', icon: '🏢', path: '/admin/objekte' },
+  { label: 'Techniker', sub: 'Mitarbeiter und PINs', icon: '👷', path: '/admin/techniker' },
+  { label: 'Hausverwaltungen', sub: 'Zugänge und Zuweisung', icon: '🏠', path: '/admin/hausverwaltungen' },
+]
 
   return (
     <div style={{ fontFamily: 'var(--font)', minHeight: '100vh', background: '#F1EFE8' }}>
