@@ -50,16 +50,17 @@ export default function App() {
       } />
 
       <Route path="/admin/*" element={
-        <GeschuetzteRoute erlaubteTypen={['superadmin']}>
-          <Routes>
-            <Route index element={<SuperadminDashboard />} />
-            <Route path="objekte" element={<Objekte />} />
-            <Route path="objekte/:id" element={<ObjektDetail />} />
-            <Route path="techniker" element={<Techniker />} />
-            <Route path="hausverwaltungen" element={<Hausverwaltungen />} />
-            <Route path="service" element={<Services />} />
-          </Routes>
-        </GeschuetzteRoute>
+          <GeschuetzteRoute erlaubteTypen={['superadmin']}>
+            <Routes>
+              <Route index element={<SuperadminDashboard />} />
+              <Route path="meldungen" element={<Meldungen />} />
+              <Route path="objekte" element={<Objekte />} />
+              <Route path="objekte/:id" element={<ObjektDetail />} />
+              <Route path="techniker" element={<Techniker />} />
+              <Route path="hausverwaltungen" element={<Hausverwaltungen />} />
+              <Route path="service" element={<Services />} />
+            </Routes>
+          </GeschuetzteRoute>
       } />
 
       <Route path="/meldung/:id" element={
