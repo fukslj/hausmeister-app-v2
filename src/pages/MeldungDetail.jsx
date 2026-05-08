@@ -41,8 +41,7 @@ export default function MeldungDetail() {
     setFotos(f || [])
     setNotizen(n || [])
     setLaden(false)
-    const { data: buckets } = await supabase.storage.listBuckets()
-console.log('Buckets:', buckets)
+    
   }
 
   const istMeine = meldung?.meldung_techniker?.some(t => t.techniker_id === profil?.id)
