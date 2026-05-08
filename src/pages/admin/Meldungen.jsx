@@ -15,14 +15,15 @@ useEffect(() => {
 }, [profil])
 
   async function ladeMeldungen() {
-    setLaden(true)
-    const { data } = await supabase
-      .from('meldung')
-      .select('*, eingang(bezeichnung, objekt(strasse, hausnummer)), meldung_techniker(techniker_id, techniker(name))')
-      .order('erstellt_am', { ascending: false })
-    setMeldungen(data || [])
-    setLaden(false)
-  }
+  setLaden(true)
+  const { data, error } = await supabase
+    .from('meldung')
+    .select('*, eingang(bezeichnung, objekt(strasse, hausnummer)), meldung_techniker(techniker_id, techniker(name))')
+    .order('erstellt_am', { ascending: false })
+  console.log('Meldungen:', data?.length, 'Fehler:', error?.message)
+  setMeldungen(data || [])
+  setLaden(false)
+}
 
   function gefilterteMeldungen() {
     if (filter === 'offen') return meldungen.filter(m => m.status === 'offen')
