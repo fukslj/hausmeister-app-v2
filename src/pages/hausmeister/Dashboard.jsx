@@ -35,6 +35,7 @@ export default function Dashboard() {
   function gefilterteMeldungen() {
     if (filter === 'meine') return meineMeldungen()
     if (filter === 'offen') return meldungen.filter(m => m.status === 'offen')
+    if (filter === 'erledigt') return meldungen.filter(m => m.status === 'erledigt')
     return meldungen
   }
 
@@ -85,7 +86,7 @@ export default function Dashboard() {
 
         {/* Filter */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-          {['alle', 'meine', 'offen'].map(f => (
+          {['alle', 'meine', 'offen', 'erledigt'].map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
               fontSize: 11, fontWeight: 500, padding: '4px 12px', borderRadius: 20,
               border: '0.5px solid', cursor: 'pointer',
