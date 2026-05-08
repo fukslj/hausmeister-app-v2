@@ -40,13 +40,13 @@ export default function Dashboard() {
   }
 
   function statusBadge(m) {
-    const istMeine = m.meldung_techniker?.some(t => t.techniker_id === profil?.id)
-    if (istMeine) return { text: 'Meine Aufgabe', bg: '#E1F5EE', color: '#085041' }
-    if (m.status === 'offen') return { text: 'Offen', bg: '#FEF3CD', color: '#856404' }
-    if (m.status === 'in_arbeit') return { text: 'In Arbeit', bg: '#E8F4FD', color: '#0C5460' }
-    if (m.status === 'erledigt') return { text: 'Erledigt', bg: '#E8F5E9', color: '#2E7D32' }
-    return { text: m.status, bg: '#F1EFE8', color: '#5F5E5A' }
-  }
+  const istMeine = m.meldung_techniker?.some(t => t.techniker_id === profil?.id)
+  if (m.status === 'erledigt') return { text: 'Erledigt', bg: '#E8F5E9', color: '#2E7D32' }
+  if (m.status === 'in_arbeit' && istMeine) return { text: 'Meine Aufgabe', bg: '#E1F5EE', color: '#085041' }
+  if (m.status === 'in_arbeit') return { text: 'In Arbeit', bg: '#E8F4FD', color: '#0C5460' }
+  if (m.status === 'offen') return { text: 'Offen', bg: '#FEF3CD', color: '#856404' }
+  return { text: m.status, bg: '#F1EFE8', color: '#5F5E5A' }
+}
 
   const gefiltert = gefilterteMeldungen()
   const offenAnzahl = meldungen.filter(m => m.status === 'offen').length
