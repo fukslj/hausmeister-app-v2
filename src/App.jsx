@@ -16,6 +16,7 @@ import Techniker from './pages/admin/Techniker'
 import Hausverwaltungen from './pages/admin/Hausverwaltungen'
 import Services from './pages/admin/Services'
 import PasswortReset from './pages/PasswortReset'
+import Meldungen from './pages/admin/Meldungen'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -34,6 +35,7 @@ export default function App() {
       <Route path="/login/admin" element={<SuperadminLogin />} />
       <Route path="/melden/:qrToken" element={<Meldeformular />} />
       <Route path="/melden/:qrToken/bestaetigung" element={<Bestaetigung />} />
+      <Route path="meldungen" element={<Meldungen />} />
 
       <Route path="/hausverwaltung" element={
         <GeschuetzteRoute erlaubteTypen={['hausverwaltung']}>
