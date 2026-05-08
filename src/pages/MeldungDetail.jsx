@@ -41,7 +41,6 @@ export default function MeldungDetail() {
     setFotos(f || [])
     setNotizen(n || [])
     setLaden(false)
-    
   }
 
   const istMeine = meldung?.meldung_techniker?.some(t => t.techniker_id === profil?.id)
@@ -50,7 +49,7 @@ export default function MeldungDetail() {
   const istVerwaltung = profil?.typ === 'hausverwaltung'
   const kannAktionen = (istHausmeister || istAdmin) && meldung?.status !== 'erledigt' && meldung?.status !== 'archiviert'
   const kannFotos = kannAktionen || istVerwaltung
-  
+
   async function uebernehmen() {
     await supabase.from('meldung_techniker').insert({ meldung_id: id, techniker_id: profil.id })
     await supabase.from('meldung').update({ status: 'in_arbeit' }).eq('id', id)
@@ -63,13 +62,13 @@ export default function MeldungDetail() {
     await supabase.from('notiz').insert({ meldung_id: id, autor_typ: 'techniker', autor_id: profil.id, autor_name: profil.name, inhalt: `${profil.name} hat die Aufgabe als erledigt markiert` })
     ladeMeldung()
   }
-  
+
   async function archivieren() {
-  await supabase.from('meldung').update({ status: 'archiviert' }).eq('id', id)
-  await supabase.from('notiz').insert({ meldung_id: id, autor_typ: 'techniker', autor_id: profil.id, autor_name: profil.name, inhalt: `${profil.name} hat die Meldung archiviert` })
-  navigate(zurueckPfad)
+    await supabase.from('meldung').update({ status: 'archiviert' }).eq('id', id)
+    await supabase.from('notiz').insert({ meldung_id: id, autor_typ: 'techniker', autor_id: profil.id, autor_name: profil.name, inhalt: `${profil.name} hat die Meldung archiviert` })
+    navigate('/admin/meldungen')
   }
-  
+
   function fotoHinzufuegen(e) {
     const files = Array.from(e.target.files)
     const verfuegbar = MAX_FOTOS - fotos.length - neueFootos.length
@@ -81,7 +80,7 @@ export default function MeldungDetail() {
   async function notizSpeichern() {
     if (!notiz.trim() && neueFootos.length === 0) return
     setSpeichern(true)
-  
+
     for (const foto of neueFootos) {
       const ext = foto.file.name.split('.').pop()
       const pfad = `${id}/${Date.now()}.${ext}`
@@ -95,7 +94,7 @@ export default function MeldungDetail() {
         })
       }
     }
-  
+
     if (notiz.trim()) {
       await supabase.from('notiz').insert({
         meldung_id: id,
@@ -105,7 +104,7 @@ export default function MeldungDetail() {
         inhalt: notiz.trim(),
       })
     }
-  
+
     setNotiz('')
     setNeueFotos([])
     setSpeichern(false)
@@ -117,6 +116,7 @@ export default function MeldungDetail() {
     if (meldung.status === 'offen') return { text: 'Offen', bg: '#FEF3CD', color: '#856404' }
     if (meldung.status === 'in_arbeit') return { text: 'In Arbeit', bg: '#E8F4FD', color: '#0C5460' }
     if (meldung.status === 'erledigt') return { text: 'Erledigt', bg: '#E8F5E9', color: '#2E7D32' }
+    if (meldung.status === 'archiviert') return { text: 'Archiviert', bg: '#F1EFE8', color: '#888780' }
     return { text: meldung.status, bg: '#F1EFE8', color: '#5F5E5A' }
   }
 
@@ -124,8 +124,8 @@ export default function MeldungDetail() {
   if (!meldung) return <div style={{ padding: 40, fontFamily: 'var(--font)', textAlign: 'center', color: '#888780' }}>Meldung nicht gefunden</div>
 
   const badge = statusBadge()
-  const zurueckPfad = istHausmeister ? '/hausmeister' : istAdmin ? '/admin' : '/hausverwaltung'
-  const topColor = istHausmeister ? { bg: '#E1F5EE', border: '#5DCAA5', text: '#04342C', back: '#0F6E56' } : { bg: '#EEEDFE', border: '#AFA9EC', text: '#26215C', back: '#534AB7' }
+  const zurueckPfad = istHausmeister ? '/hausmeister' : istAdmin ? '/admin/meldungen' : '/hausverwaltung'
+  const topColor = istHausmeister ? { bg: '#E1F5EE', border: '#5DCAA5', text: '#04342C', back: '#0F6E56' } : istAdmin ? { bg: '#F1EFE8', border: '#D3D1C7', text: '#2C2C2A', back: '#444441' } : { bg: '#EEEDFE', border: '#AFA9EC', text: '#26215C', back: '#534AB7' }
 
   return (
     <div style={{ fontFamily: 'var(--font)', minHeight: '100vh', background: '#F8F7F2' }}>
@@ -160,10 +160,9 @@ export default function MeldungDetail() {
             ))}
           </div>
 
-          {/* Fotos */}
           {fotos.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-              {fotos.map((f, i) => (
+              {fotos.map((f) => (
                 <img key={f.id} src={f.url} alt="" onClick={() => window.open(f.url, '_blank')}
                   style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 8, cursor: 'pointer' }} />
               ))}
@@ -180,38 +179,39 @@ export default function MeldungDetail() {
               </button>
             )}
             {istMeine && !erledigtBestaetigung && (
-  <button onClick={() => setErledigtBestaetigung(true)} style={{ flex: 1, height: 44, borderRadius: 10, background: '#E8F5E9', color: '#2E7D32', fontSize: 14, fontWeight: 500, border: '0.5px solid #A5D6A7', cursor: 'pointer' }}>
-    Als erledigt markieren
-  </button>
-)}
-    {istAdmin && meldung?.status === 'erledigt' && (
-  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-    <button onClick={archivieren} style={{ fontSize: 11, padding: '6px 14px', borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>
-      Archivieren
-    </button>
-  </div>
-)}
-{erledigtBestaetigung && (
-  <div style={{ flex: 1, display: 'flex', gap: 8 }}>
-    <button onClick={() => setErledigtBestaetigung(false)} style={{ flex: 1, height: 44, borderRadius: 10, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>
-      Abbrechen
-    </button>
-    <button onClick={() => { erledigen(); setErledigtBestaetigung(false) }} style={{ flex: 1, height: 44, borderRadius: 10, background: '#2E7D32', color: 'white', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-      ✓ Ja, erledigt
-    </button>
-  </div>
-)}
+              <button onClick={() => setErledigtBestaetigung(true)} style={{ flex: 1, height: 44, borderRadius: 10, background: '#E8F5E9', color: '#2E7D32', fontSize: 14, fontWeight: 500, border: '0.5px solid #A5D6A7', cursor: 'pointer' }}>
+                Als erledigt markieren
+              </button>
+            )}
+            {istMeine && erledigtBestaetigung && (
+              <div style={{ flex: 1, display: 'flex', gap: 8 }}>
+                <button onClick={() => setErledigtBestaetigung(false)} style={{ flex: 1, height: 44, borderRadius: 10, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>
+                  Abbrechen
+                </button>
+                <button onClick={() => { erledigen(); setErledigtBestaetigung(false) }} style={{ flex: 1, height: 44, borderRadius: 10, background: '#2E7D32', color: 'white', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                  ✓ Ja, erledigt
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Archivieren — nur Admin, nur erledigte Meldungen */}
+        {istAdmin && meldung?.status === 'erledigt' && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={archivieren} style={{ fontSize: 11, padding: '6px 14px', borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>
+              Archivieren
+            </button>
           </div>
         )}
 
         {/* Notiz + Fotos hinzufügen */}
         {kannFotos && (
-         <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 16 }}>
-           <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A', marginBottom: 10 }}>
-             {istVerwaltung ? 'Dokument / Foto hochladen' : 'Notiz & Fotos hinzufügen'}
-          </div>
+          <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A', marginBottom: 10 }}>
+              {istVerwaltung ? 'Dokument / Foto hochladen' : 'Notiz & Fotos hinzufügen'}
+            </div>
 
-            {/* Neue Fotos Vorschau */}
             {neueFootos.length > 0 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
                 {neueFootos.map((f, i) => (
