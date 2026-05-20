@@ -12,6 +12,7 @@ export default function Dashboard() {
   { label: 'Techniker', sub: 'Mitarbeiter und PINs', icon: '👷', path: '/admin/techniker' },
   { label: 'Hausverwaltungen', sub: 'Zugänge und Zuweisung', icon: '🏠', path: '/admin/hausverwaltungen' },
   { label: 'Stempeluhr', sub: 'Arbeitszeiten der Techniker', icon: '⏱', path: '/admin/stempeluhr' },
+  { label: 'Aufgabenplan', sub: 'Aufgaben pro Objekt verwalten', icon: '📅', path: '/admin/aufgabenplan' },
 ]
 
   return (
