@@ -22,6 +22,7 @@ import StempeluhrAdmin from './pages/admin/Stempeluhr'
 import Aufgabenplan from './pages/admin/Aufgabenplan'
 import AufgabenplanHausmeister from './pages/hausmeister/Aufgabenplan'
 import Fahrzeuge from './pages/admin/Fahrzeuge'
+import FahrzeugeHausmeister from './pages/hausmeister/Fahrzeuge'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -55,6 +56,11 @@ export default function App() {
       <Route path="/hausmeister/aufgabenplan" element={
           <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
           <AufgabenplanHausmeister />
+      </GeschuetzteRoute>
+      } />
+      <Route path="/hausmeister/fahrzeuge" element={
+          <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+          <FahrzeugeHausmeister />
       </GeschuetzteRoute>
       } />
       <Route path="/hausmeister" element={
