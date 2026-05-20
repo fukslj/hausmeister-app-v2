@@ -17,6 +17,7 @@ import Hausverwaltungen from './pages/admin/Hausverwaltungen'
 import Services from './pages/admin/Services'
 import PasswortReset from './pages/PasswortReset'
 import Meldungen from './pages/admin/Meldungen'
+import Stempeluhr from './pages/hausmeister/Stempeluhr'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -61,7 +62,11 @@ export default function App() {
             </Routes>
           </GeschuetzteRoute>
       } />
-
+      <Route path="/hausmeister/stempeluhr" element={
+          <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+          <Stempeluhr />
+      </GeschuetzteRoute>
+      } />
       <Route path="/meldung/:id" element={
         <GeschuetzteRoute erlaubteTypen={['hausverwaltung', 'hausmeister', 'superadmin']}>
           <MeldungDetail />
