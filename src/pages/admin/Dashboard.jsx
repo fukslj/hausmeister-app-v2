@@ -13,6 +13,7 @@ export default function Dashboard() {
   { label: 'Hausverwaltungen', sub: 'Zugänge und Zuweisung', icon: '🏠', path: '/admin/hausverwaltungen' },
   { label: 'Stempeluhr', sub: 'Arbeitszeiten der Techniker', icon: '⏱', path: '/admin/stempeluhr' },
   { label: 'Aufgabenplan', sub: 'Aufgaben pro Objekt verwalten', icon: '📅', path: '/admin/aufgabenplan' },
+  { label: 'Fahrzeuge', sub: 'Fuhrpark und Buchungen', icon: '🚐', path: '/admin/fahrzeuge' },
 ]
 
   return (
