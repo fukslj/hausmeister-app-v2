@@ -54,7 +54,10 @@ export default function Muellkalender() {
     ladeDaten()
   }
 
-  async function csvImport(e) {
+ async function csvImport(e) {
+  console.log('csvImport gestartet')
+  const file = e.target.files[0]
+  console.log('Objekt:', selectedObjekt, 'Datei:', file?.name)
     const file = e.target.files[0]
     if (!file || !selectedObjekt) return
     const text = await file.text()
