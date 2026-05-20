@@ -23,6 +23,7 @@ import Aufgabenplan from './pages/admin/Aufgabenplan'
 import AufgabenplanHausmeister from './pages/hausmeister/Aufgabenplan'
 import Fahrzeuge from './pages/admin/Fahrzeuge'
 import FahrzeugeHausmeister from './pages/hausmeister/Fahrzeuge'
+import Muellkalender from './pages/admin/Muellkalender'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -82,6 +83,7 @@ export default function App() {
             <Route path="stempeluhr" element={<StempeluhrAdmin />} />
             <Route path="aufgabenplan" element={<Aufgabenplan />} />
             <Route path="fahrzeuge" element={<Fahrzeuge />} />
+            <Route path="muellkalender" element={<Muellkalender />} />
           </Routes>
         </GeschuetzteRoute>
       } />
