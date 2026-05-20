@@ -60,23 +60,27 @@ export default function Muellkalender() {
     const text = await file.text()
     const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
     if (zeilen.length < 2) return
-
-    // Erste Zeile = Müllarten (Spaltenköpfe)
     const fraktionen = zeilen[0].split(',').map(s => s.trim().replace(/"/g, ''))
-
     const inserts = []
     for (const zeile of zeilen.slice(1)) {
       const werte = zeile.split(',').map(s => s.trim().replace(/"/g, ''))
       fraktionen.forEach((fraktion, i) => {
         const datumRaw = werte[i]
         if (!datumRaw) return
-        // TT.MM.YYYY → YYYY-MM-DD
         const teile = datumRaw.split('.')
         if (teile.length !== 3) return
         const datum = `${teile[2]}-${teile[1].padStart(2, '0')}-${teile[0].padStart(2, '0')}`
         inserts.push({ objekt_id: selectedObjekt, datum, fraktion })
       })
     }
+    console.log('Inserts:', JSON.stringify(inserts))
+    if (inserts.length > 0) {
+      const { error } = await supabase.from('muell_termin').insert(inserts)
+      console.log('Insert Fehler:', error)
+      if (!error) { ladeDaten(); setImportOffen(false) }
+    }
+    e.target.value = ''
+  }
 
     if (inserts.length > 0) {
       await supabase.from('muell_termin').insert(inserts)
