@@ -172,10 +172,19 @@ export default function Muellkalender() {
               <option value="">Objekt auswählen…</option>
               {objekte.map(o => <option key={o.id} value={o.id}>{o.strasse} {o.hausnummer}</option>)}
             </select>
-            <label style={{ display: 'flex', height: 60, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', alignItems: 'center', justifyContent: 'center', cursor: selectedObjekt ? 'pointer' : 'not-allowed', fontSize: 13, color: selectedObjekt ? '#444441' : '#888780' }}>
-              📂 CSV Datei auswählen
-              <input type="file" accept=".csv" onChange={csvImport} disabled={!selectedObjekt} style={{ display: 'none' }} />
-            </label>
+            <div
+  onClick={() => selectedObjekt && document.getElementById('csv-input').click()}
+  style={{ height: 60, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: selectedObjekt ? 'pointer' : 'not-allowed', fontSize: 13, color: selectedObjekt ? '#444441' : '#888780' }}>
+  📂 CSV Datei auswählen
+</div>
+<input
+  id="csv-input"
+  type="file"
+  accept=".csv"
+  onChange={csvImport}
+  disabled={!selectedObjekt}
+  style={{ display: 'none' }}
+/>
             <button onClick={() => setImportOffen(false)} style={{ marginTop: 10, width: '100%', height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Schließen</button>
           </div>
         )}
