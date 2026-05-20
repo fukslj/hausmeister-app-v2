@@ -110,6 +110,9 @@ export default function Dashboard() {
               </span>
             )}
           </button>
+          <button onClick={() => navigate('/hausmeister/fahrzeuge')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#E1F5EE', color: '#0F6E56', border: '0.5px solid #9FE1CB', cursor: 'pointer' }}>
+            🚐 Fahrzeuge
+          </button>
         </div>
       </div>
 
