@@ -55,23 +55,36 @@ export default function Muellkalender() {
   }
 
   async function csvImport(e) {
-    const file = e.target.files[0]
-    if (!file || !selectedObjekt) return
-    const text = await file.text()
-    const zeilen = text.split('\n').filter(z => z.trim())
-    const inserts = []
-    for (const zeile of zeilen.slice(1)) {
-      const [datum, fraktion, notiz] = zeile.split(',').map(s => s.trim().replace(/"/g, ''))
-      if (datum && fraktion) {
-        inserts.push({ objekt_id: selectedObjekt, datum, fraktion, notiz: notiz || null })
-      }
-    }
-    if (inserts.length > 0) {
-      await supabase.from('muell_termin').insert(inserts)
-      ladeDaten()
-      setImportOffen(false)
-    }
+  const file = e.target.files[0]
+  if (!file || !selectedObjekt) return
+  const text = await file.text()
+  const zeilen = text.split('\n').filter(z => z.trim())
+  if (zeilen.length < 2) return
+
+  // Erste Zeile = Müllarten (Spaltenköpfe)
+  const fraktionen = zeilen[0].split(',').map(s => s.trim().replace(/"/g, ''))
+
+  const inserts = []
+  for (const zeile of zeilen.slice(1)) {
+    const werte = zeile.split(',').map(s => s.trim().replace(/"/g, ''))
+    fraktionen.forEach((fraktion, i) => {
+      const datumRaw = werte[i]
+      if (!datumRaw) return
+      // TT.MM.YYYY → YYYY-MM-DD
+      const teile = datumRaw.split('.')
+      if (teile.length !== 3) return
+      const datum = `${teile[2]}-${teile[1].padStart(2,'0')}-${teile[0].padStart(2,'0')}`
+      inserts.push({ objekt_id: selectedObjekt, datum, fraktion })
+    })
   }
+
+  if (inserts.length > 0) {
+    await supabase.from('muell_termin').insert(inserts)
+    ladeDaten()
+    setImportOffen(false)
+  }
+  e.target.value = ''
+}
 
   async function terminLoeschen(id) {
     await supabase.from('muell_termin').delete().eq('id', id)
