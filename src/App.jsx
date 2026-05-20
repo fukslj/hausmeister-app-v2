@@ -18,6 +18,7 @@ import Services from './pages/admin/Services'
 import PasswortReset from './pages/PasswortReset'
 import Meldungen from './pages/admin/Meldungen'
 import Stempeluhr from './pages/hausmeister/Stempeluhr'
+import StempeluhrAdmin from './pages/admin/Stempeluhr'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="techniker" element={<Techniker />} />
             <Route path="hausverwaltungen" element={<Hausverwaltungen />} />
             <Route path="service" element={<Services />} />
+            <Route path="stempeluhr" element={<StempeluhrAdmin />} />
           </Routes>
         </GeschuetzteRoute>
       } />
