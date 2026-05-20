@@ -56,24 +56,28 @@ export default function Dashboard() {
   return (
     <div style={{ fontFamily: 'var(--font)', minHeight: '100vh', background: '#F8F7F2' }}>
       {/* Topbar */}
-      <div style={{ background: '#E1F5EE', padding: '14px 20px', borderBottom: '0.5px solid #5DCAA5', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: '#9FE1CB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" stroke="#085041" strokeWidth="1.5"/>
-              <path d="M3 18c0-3 2.5-5 5-5h8c2.5 0 5 2 5 5" stroke="#085041" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <span style={{ fontSize: 14, fontWeight: 500, color: '#04342C' }}>{profil?.name}</span>
-        </div>
-        <button onClick={abmelden} style={{ fontSize: 12, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer' }}>Abmelden</button>
-        <button onClick={() => navigate('/hausmeister/stempeluhr')} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#0F6E56', color: '#E1F5EE', border: 'none', cursor: 'pointer' }}>
-          ⏱ Stempeluhr
-        </button>
-        <button onClick={() => navigate('/hausmeister/aufgabenplan')} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#E1F5EE', color: '#0F6E56', border: '0.5px solid #9FE1CB', cursor: 'pointer' }}>
-          📅 Aufgaben
-        </button>
+      <div style={{ background: '#E1F5EE', borderBottom: '0.5px solid #5DCAA5' }}>
+  <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ width: 28, height: 28, borderRadius: 7, background: '#9FE1CB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" stroke="#085041" strokeWidth="1.5"/>
+          <path d="M3 18c0-3 2.5-5 5-5h8c2.5 0 5 2 5 5" stroke="#085041" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
       </div>
+      <span style={{ fontSize: 14, fontWeight: 500, color: '#04342C' }}>{profil?.name}</span>
+    </div>
+    <button onClick={abmelden} style={{ fontSize: 12, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer' }}>Abmelden</button>
+  </div>
+  <div style={{ padding: '0 20px 12px', display: 'flex', gap: 8 }}>
+    <button onClick={() => navigate('/hausmeister/stempeluhr')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#0F6E56', color: '#E1F5EE', border: 'none', cursor: 'pointer' }}>
+      ⏱ Stempeluhr
+    </button>
+    <button onClick={() => navigate('/hausmeister/aufgabenplan')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#E1F5EE', color: '#0F6E56', border: '0.5px solid #9FE1CB', cursor: 'pointer' }}>
+      📅 Aufgaben
+    </button>
+  </div>
+</div>
 
       <div style={{ padding: 20, maxWidth: 480, margin: '0 auto' }}>
         {/* Metriken */}
