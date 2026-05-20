@@ -55,36 +55,36 @@ export default function Muellkalender() {
   }
 
   async function csvImport(e) {
-  const file = e.target.files[0]
-  if (!file || !selectedObjekt) return
-  const text = await file.text()
-  const zeilen = text.split('\n').filter(z => z.trim())
-  if (zeilen.length < 2) return
+    const file = e.target.files[0]
+    if (!file || !selectedObjekt) return
+    const text = await file.text()
+    const zeilen = text.split('\n').filter(z => z.trim())
+    if (zeilen.length < 2) return
 
-  // Erste Zeile = Müllarten (Spaltenköpfe)
-  const fraktionen = zeilen[0].split(',').map(s => s.trim().replace(/"/g, ''))
+    // Erste Zeile = Müllarten (Spaltenköpfe)
+    const fraktionen = zeilen[0].split(',').map(s => s.trim().replace(/"/g, ''))
 
-  const inserts = []
-  for (const zeile of zeilen.slice(1)) {
-    const werte = zeile.split(',').map(s => s.trim().replace(/"/g, ''))
-    fraktionen.forEach((fraktion, i) => {
-      const datumRaw = werte[i]
-      if (!datumRaw) return
-      // TT.MM.YYYY → YYYY-MM-DD
-      const teile = datumRaw.split('.')
-      if (teile.length !== 3) return
-      const datum = `${teile[2]}-${teile[1].padStart(2,'0')}-${teile[0].padStart(2,'0')}`
-      inserts.push({ objekt_id: selectedObjekt, datum, fraktion })
-    })
+    const inserts = []
+    for (const zeile of zeilen.slice(1)) {
+      const werte = zeile.split(',').map(s => s.trim().replace(/"/g, ''))
+      fraktionen.forEach((fraktion, i) => {
+        const datumRaw = werte[i]
+        if (!datumRaw) return
+        // TT.MM.YYYY → YYYY-MM-DD
+        const teile = datumRaw.split('.')
+        if (teile.length !== 3) return
+        const datum = `${teile[2]}-${teile[1].padStart(2, '0')}-${teile[0].padStart(2, '0')}`
+        inserts.push({ objekt_id: selectedObjekt, datum, fraktion })
+      })
+    }
+
+    if (inserts.length > 0) {
+      await supabase.from('muell_termin').insert(inserts)
+      ladeDaten()
+      setImportOffen(false)
+    }
+    e.target.value = ''
   }
-
-  if (inserts.length > 0) {
-    await supabase.from('muell_termin').insert(inserts)
-    ladeDaten()
-    setImportOffen(false)
-  }
-  e.target.value = ''
-}
 
   async function terminLoeschen(id) {
     await supabase.from('muell_termin').delete().eq('id', id)
@@ -138,15 +138,19 @@ export default function Muellkalender() {
         {importOffen && (
           <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20 }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 8 }}>CSV Import</div>
-            <div style={{ fontSize: 12, color: '#888780', marginBottom: 16, padding: '10px 12px', background: '#F8F7F2', borderRadius: 8, lineHeight: 1.6 }}>
-              Format: <code>datum,fraktion,notiz</code><br/>
-              Beispiel: <code>2024-01-15,Restmüll,Tonne vorne</code>
+            <div style={{ fontSize: 12, color: '#888780', marginBottom: 16, padding: '10px 12px', background: '#F8F7F2', borderRadius: 8, lineHeight: 1.8 }}>
+              <strong style={{ color: '#2C2C2A' }}>Format:</strong><br/>
+              Erste Zeile: Müllarten als Spaltenköpfe<br/>
+              Ab Zeile 2: Termine im Format TT.MM.YYYY<br/><br/>
+              <code style={{ fontSize: 11 }}>Restmüll,Papiertonne,Biotonne</code><br/>
+              <code style={{ fontSize: 11 }}>15.01.2024,08.01.2024,22.01.2024</code><br/>
+              <code style={{ fontSize: 11 }}>12.02.2024,05.02.2024,19.02.2024</code>
             </div>
             <select style={{ ...inputStyle, marginBottom: 10 }} value={selectedObjekt} onChange={e => setSelectedObjekt(e.target.value)}>
               <option value="">Objekt auswählen…</option>
               {objekte.map(o => <option key={o.id} value={o.id}>{o.strasse} {o.hausnummer}</option>)}
             </select>
-            <label style={{ display: 'block', height: 60, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: selectedObjekt ? 'pointer' : 'not-allowed', fontSize: 13, color: selectedObjekt ? '#444441' : '#888780' }}>
+            <label style={{ display: 'flex', height: 60, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', alignItems: 'center', justifyContent: 'center', cursor: selectedObjekt ? 'pointer' : 'not-allowed', fontSize: 13, color: selectedObjekt ? '#444441' : '#888780' }}>
               📂 CSV Datei auswählen
               <input type="file" accept=".csv" onChange={csvImport} disabled={!selectedObjekt} style={{ display: 'none' }} />
             </label>
