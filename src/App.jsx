@@ -36,10 +36,16 @@ export default function App() {
       <Route path="/login/admin" element={<SuperadminLogin />} />
       <Route path="/melden/:qrToken" element={<Meldeformular />} />
       <Route path="/melden/:qrToken/bestaetigung" element={<Bestaetigung />} />
-      
+
       <Route path="/hausverwaltung" element={
         <GeschuetzteRoute erlaubteTypen={['hausverwaltung']}>
           <HausverwaltungDashboard />
+        </GeschuetzteRoute>
+      } />
+
+      <Route path="/hausmeister/stempeluhr" element={
+        <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+          <Stempeluhr />
         </GeschuetzteRoute>
       } />
 
@@ -50,28 +56,25 @@ export default function App() {
       } />
 
       <Route path="/admin/*" element={
-          <GeschuetzteRoute erlaubteTypen={['superadmin']}>
-            <Routes>
-              <Route index element={<SuperadminDashboard />} />
-              <Route path="meldungen" element={<Meldungen />} />
-              <Route path="objekte" element={<Objekte />} />
-              <Route path="objekte/:id" element={<ObjektDetail />} />
-              <Route path="techniker" element={<Techniker />} />
-              <Route path="hausverwaltungen" element={<Hausverwaltungen />} />
-              <Route path="service" element={<Services />} />
-            </Routes>
-          </GeschuetzteRoute>
+        <GeschuetzteRoute erlaubteTypen={['superadmin']}>
+          <Routes>
+            <Route index element={<SuperadminDashboard />} />
+            <Route path="meldungen" element={<Meldungen />} />
+            <Route path="objekte" element={<Objekte />} />
+            <Route path="objekte/:id" element={<ObjektDetail />} />
+            <Route path="techniker" element={<Techniker />} />
+            <Route path="hausverwaltungen" element={<Hausverwaltungen />} />
+            <Route path="service" element={<Services />} />
+          </Routes>
+        </GeschuetzteRoute>
       } />
-      <Route path="/hausmeister/stempeluhr" element={
-          <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
-          <Stempeluhr />
-      </GeschuetzteRoute>
-      } />
+
       <Route path="/meldung/:id" element={
         <GeschuetzteRoute erlaubteTypen={['hausverwaltung', 'hausmeister', 'superadmin']}>
           <MeldungDetail />
         </GeschuetzteRoute>
       } />
+
       <Route path="/passwort-reset" element={<PasswortReset />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
