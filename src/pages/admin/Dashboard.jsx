@@ -14,6 +14,7 @@ export default function Dashboard() {
   { label: 'Stempeluhr', sub: 'Arbeitszeiten der Techniker', icon: '⏱', path: '/admin/stempeluhr' },
   { label: 'Aufgabenplan', sub: 'Aufgaben pro Objekt verwalten', icon: '📅', path: '/admin/aufgabenplan' },
   { label: 'Fahrzeuge', sub: 'Fuhrpark und Buchungen', icon: '🚐', path: '/admin/fahrzeuge' },
+  { label: 'Müllkalender', sub: 'Abholtermine und Meldungen', icon: '🗑', path: '/admin/muellkalender' },
 ]
 
   return (
