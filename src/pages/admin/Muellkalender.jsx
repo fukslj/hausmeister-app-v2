@@ -182,7 +182,7 @@ export default function Muellkalender() {
   id="csv-input"
   type="file"
   accept=".csv"
-  onChange={csvImport}
+  onInput={(e) => { e.stopPropagation(); csvImport(e) }}
   disabled={!selectedObjekt}
   style={{ display: 'none' }}
 />
