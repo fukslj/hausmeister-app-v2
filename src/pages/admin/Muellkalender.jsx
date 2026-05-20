@@ -58,7 +58,7 @@ export default function Muellkalender() {
     const file = e.target.files[0]
     if (!file || !selectedObjekt) return
     const text = await file.text()
-    const zeilen = text.split('\n').filter(z => z.trim())
+    const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
     if (zeilen.length < 2) return
 
     // Erste Zeile = Müllarten (Spaltenköpfe)
