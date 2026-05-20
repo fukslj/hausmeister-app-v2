@@ -55,57 +55,42 @@ export default function Muellkalender() {
     ladeDaten()
   }
 
- async function csvImport(e) {
-  const file = e.target.files[0]
-  if (!file || !selectedObjekt) return
+  async function csvImport(e) {
+    const file = e.target.files[0]
+    if (!file || !selectedObjekt) return
 
-  // ISO-8859-1 Encoding unterstützen
-  const buffer = await file.arrayBuffer()
-  const decoder = new TextDecoder('iso-8859-1')
-  const text = decoder.decode(buffer)
+    const buffer = await file.arrayBuffer()
+    const decoder = new TextDecoder('iso-8859-1')
+    const text = decoder.decode(buffer)
+    const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
 
-  const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
-   alert(`Zeilen: ${zeilen.length}, Erste: ${zeilen[0]}`)
-  if (zeilen.length < 2) return
+    if (zeilen.length < 2) { alert('CSV hat zu wenig Zeilen'); return }
 
-  // Automatisch Trennzeichen erkennen (Semikolon oder Komma)
-  const trennzeichen = zeilen[0].includes(';') ? ';' : ','
+    const trennzeichen = zeilen[0].includes(';') ? ';' : ','
+    const fraktionen = zeilen[0].split(trennzeichen).map(s => s.trim().replace(/"/g, ''))
+    const inserts = []
 
-  const fraktionen = zeilen[0].split(trennzeichen).map(s => s.trim().replace(/"/g, ''))
-  const inserts = []
-
-  for (const zeile of zeilen.slice(1)) {
-    const werte = zeile.split(trennzeichen).map(s => s.trim().replace(/"/g, ''))
-    fraktionen.forEach((fraktion, i) => {
-      const datumRaw = werte[i]
-      if (!datumRaw) return
-      const teile = datumRaw.split('.')
-      if (teile.length !== 3) return
-      const datum = `${teile[2]}-${teile[1].padStart(2, '0')}-${teile[0].padStart(2, '0')}`
-      inserts.push({ objekt_id: selectedObjekt, datum, fraktion })
-    })
-  }
-
-  if (inserts.length > 0) {
-    const { error } = await supabase.from('muell_termin').insert(inserts)
-    if (!error) { ladeDaten(); setImportOffen(false) }
-    else alert('Fehler: ' + error.message)
-  }
-  e.target.value = ''
-}
-    console.log('Inserts:', JSON.stringify(inserts))
-    if (inserts.length > 0) {
-      const { error } = await supabase.from('muell_termin').insert(inserts)
-      console.log('Insert Fehler:', error)
-      if (!error) { ladeDaten(); setImportOffen(false) }
+    for (const zeile of zeilen.slice(1)) {
+      const werte = zeile.split(trennzeichen).map(s => s.trim().replace(/"/g, ''))
+      fraktionen.forEach((fraktion, i) => {
+        const datumRaw = werte[i]
+        if (!datumRaw) return
+        const teile = datumRaw.split('.')
+        if (teile.length !== 3) return
+        const datum = `${teile[2]}-${teile[1].padStart(2, '0')}-${teile[0].padStart(2, '0')}`
+        inserts.push({ objekt_id: selectedObjekt, datum, fraktion })
+      })
     }
-    e.target.value = ''
-  }
 
-    if (inserts.length > 0) {
-      await supabase.from('muell_termin').insert(inserts)
+    if (inserts.length === 0) { alert('Keine gültigen Termine gefunden'); return }
+
+    const { error } = await supabase.from('muell_termin').insert(inserts)
+    if (!error) {
+      alert(`${inserts.length} Termine importiert`)
       ladeDaten()
       setImportOffen(false)
+    } else {
+      alert('Fehler: ' + error.message)
     }
     e.target.value = ''
   }
@@ -165,28 +150,27 @@ export default function Muellkalender() {
             <div style={{ fontSize: 12, color: '#888780', marginBottom: 16, padding: '10px 12px', background: '#F8F7F2', borderRadius: 8, lineHeight: 1.8 }}>
               <strong style={{ color: '#2C2C2A' }}>Format:</strong><br/>
               Erste Zeile: Müllarten als Spaltenköpfe<br/>
-              Ab Zeile 2: Termine im Format TT.MM.YYYY<br/><br/>
-              <code style={{ fontSize: 11 }}>Restmüll,Papiertonne,Biotonne</code><br/>
-              <code style={{ fontSize: 11 }}>15.01.2024,08.01.2024,22.01.2024</code><br/>
-              <code style={{ fontSize: 11 }}>12.02.2024,05.02.2024,19.02.2024</code>
+              Ab Zeile 2: Termine im Format TT.MM.YYYY<br/>
+              Trennzeichen: Komma oder Semikolon<br/><br/>
+              <code style={{ fontSize: 11 }}>Biomüll;Restmüll;Papier</code><br/>
+              <code style={{ fontSize: 11 }}>08.01.2026;15.01.2026;20.01.2026</code>
             </div>
             <select style={{ ...inputStyle, marginBottom: 10 }} value={selectedObjekt} onChange={e => setSelectedObjekt(e.target.value)}>
               <option value="">Objekt auswählen…</option>
               {objekte.map(o => <option key={o.id} value={o.id}>{o.strasse} {o.hausnummer}</option>)}
             </select>
             <div
-  onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (selectedObjekt) csvInputRef.current?.click() }}
-  style={{ height: 60, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: selectedObjekt ? 'pointer' : 'not-allowed', fontSize: 13, color: selectedObjekt ? '#444441' : '#888780' }}>
-  📂 CSV Datei auswählen
-</div>
-<input
-  ref={csvInputRef}
-  type="file"
-  accept=".csv"
-  onChange={csvImport}
-  disabled={!selectedObjekt}
-  style={{ display: 'none' }}
-/>
+              onClick={() => selectedObjekt && csvInputRef.current?.click()}
+              style={{ height: 60, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: selectedObjekt ? 'pointer' : 'not-allowed', fontSize: 13, color: selectedObjekt ? '#444441' : '#888780' }}>
+              📂 CSV Datei auswählen
+            </div>
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".csv"
+              onChange={csvImport}
+              style={{ display: 'none' }}
+            />
             <button onClick={() => setImportOffen(false)} style={{ marginTop: 10, width: '100%', height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Schließen</button>
           </div>
         )}
@@ -235,18 +219,9 @@ export default function Muellkalender() {
               <button onClick={async () => {
                 if (!muellEmail || !meldungText) return
                 await supabase.functions.invoke('meldung-status-email', {
-                  body: {
-                    typ: 'muell',
-                    email: muellEmail,
-                    termin: meldungTermin,
-                    text: meldungText,
-                    objekt: objekte.find(o => o.id === meldungTermin.objekt_id),
-                  }
+                  body: { typ: 'muell', email: muellEmail, termin: meldungTermin, text: meldungText, objekt: objekte.find(o => o.id === meldungTermin.objekt_id) }
                 })
-                setMeldeFormOffen(false)
-                setMeldungTermin(null)
-                setMuellEmail('')
-                setMeldungText('')
+                setMeldeFormOffen(false); setMeldungTermin(null); setMuellEmail(''); setMeldungText('')
                 alert('Meldung wurde gesendet')
               }} style={{ flex: 1, height: 36, borderRadius: 8, background: '#C0392B', color: 'white', border: 'none', fontSize: 13, cursor: 'pointer' }}>
                 Senden
