@@ -67,6 +67,9 @@ export default function Dashboard() {
           <span style={{ fontSize: 14, fontWeight: 500, color: '#04342C' }}>{profil?.name}</span>
         </div>
         <button onClick={abmelden} style={{ fontSize: 12, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer' }}>Abmelden</button>
+        <button onClick={() => navigate('/hausmeister/stempeluhr')} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#0F6E56', color: '#E1F5EE', border: 'none', cursor: 'pointer' }}>
+  ⏱ Stempeluhr
+</button>
       </div>
 
       <div style={{ padding: 20, maxWidth: 480, margin: '0 auto' }}>
