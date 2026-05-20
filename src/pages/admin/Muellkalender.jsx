@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
@@ -22,6 +22,7 @@ export default function Muellkalender() {
   const [meldeFormOffen, setMeldeFormOffen] = useState(false)
   const [meldungText, setMeldungText] = useState('')
   const [meldungTermin, setMeldungTermin] = useState(null)
+  const csvInputRef = useRef(null)
 
   useEffect(() => { ladeDaten() }, [])
 
@@ -174,15 +175,15 @@ export default function Muellkalender() {
               {objekte.map(o => <option key={o.id} value={o.id}>{o.strasse} {o.hausnummer}</option>)}
             </select>
             <div
-  onClick={() => selectedObjekt && document.getElementById('csv-input').click()}
+  onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (selectedObjekt) csvInputRef.current?.click() }}
   style={{ height: 60, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: selectedObjekt ? 'pointer' : 'not-allowed', fontSize: 13, color: selectedObjekt ? '#444441' : '#888780' }}>
   📂 CSV Datei auswählen
 </div>
 <input
-  id="csv-input"
+  ref={csvInputRef}
   type="file"
   accept=".csv"
-  onInput={(e) => { e.stopPropagation(); csvImport(e) }}
+  onChange={csvImport}
   disabled={!selectedObjekt}
   style={{ display: 'none' }}
 />
