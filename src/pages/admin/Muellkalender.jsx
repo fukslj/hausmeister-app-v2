@@ -64,6 +64,7 @@ export default function Muellkalender() {
   const text = decoder.decode(buffer)
 
   const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
+   alert(`Zeilen: ${zeilen.length}, Erste: ${zeilen[0]}`)
   if (zeilen.length < 2) return
 
   // Automatisch Trennzeichen erkennen (Semikolon oder Komma)
