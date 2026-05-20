@@ -10,13 +10,15 @@ export default function Dashboard() {
   const [meldungen, setMeldungen] = useState([])
   const [laden, setLaden] = useState(true)
   const [filter, setFilter] = useState('alle')
+  const [offeneAufgaben, setOffeneAufgaben] = useState(0)
 
   useEffect(() => {
-  if (profil?.id) {
-    ladeMeldungen()
-    registerPush(supabase, profil.id)
-  }
-}, [profil])
+    if (profil?.id) {
+      ladeMeldungen()
+      ladeOffeneAufgaben()
+      registerPush(supabase, profil.id)
+    }
+  }, [profil])
 
   async function ladeMeldungen() {
     setLaden(true)
@@ -26,6 +28,15 @@ export default function Dashboard() {
       .order('erstellt_am', { ascending: false })
     setMeldungen(data || [])
     setLaden(false)
+  }
+
+  async function ladeOffeneAufgaben() {
+    const { count } = await supabase
+      .from('aufgabenplan')
+      .select('*', { count: 'exact', head: true })
+      .eq('techniker_id', profil?.id)
+      .eq('status', 'offen')
+    setOffeneAufgaben(count || 0)
   }
 
   function meineMeldungen() {
@@ -40,13 +51,13 @@ export default function Dashboard() {
   }
 
   function statusBadge(m) {
-  const istMeine = m.meldung_techniker?.some(t => t.techniker_id === profil?.id)
-  if (m.status === 'erledigt') return { text: 'Erledigt', bg: '#E8F5E9', color: '#2E7D32' }
-  if (m.status === 'in_arbeit' && istMeine) return { text: 'Meine Aufgabe', bg: '#E1F5EE', color: '#085041' }
-  if (m.status === 'in_arbeit') return { text: 'In Arbeit', bg: '#E8F4FD', color: '#0C5460' }
-  if (m.status === 'offen') return { text: 'Offen', bg: '#FEF3CD', color: '#856404' }
-  return { text: m.status, bg: '#F1EFE8', color: '#5F5E5A' }
-}
+    const istMeine = m.meldung_techniker?.some(t => t.techniker_id === profil?.id)
+    if (m.status === 'erledigt') return { text: 'Erledigt', bg: '#E8F5E9', color: '#2E7D32' }
+    if (m.status === 'in_arbeit' && istMeine) return { text: 'Meine Aufgabe', bg: '#E1F5EE', color: '#085041' }
+    if (m.status === 'in_arbeit') return { text: 'In Arbeit', bg: '#E8F4FD', color: '#0C5460' }
+    if (m.status === 'offen') return { text: 'Offen', bg: '#FEF3CD', color: '#856404' }
+    return { text: m.status, bg: '#F1EFE8', color: '#5F5E5A' }
+  }
 
   const gefiltert = gefilterteMeldungen()
   const offenAnzahl = meldungen.filter(m => m.status === 'offen').length
@@ -55,29 +66,52 @@ export default function Dashboard() {
 
   return (
     <div style={{ fontFamily: 'var(--font)', minHeight: '100vh', background: '#F8F7F2' }}>
+      <style>{`
+        @keyframes glow {
+          0% { box-shadow: 0 0 4px rgba(192, 57, 43, 0.4); }
+          50% { box-shadow: 0 0 18px rgba(192, 57, 43, 0.9), 0 0 30px rgba(192, 57, 43, 0.4); }
+          100% { box-shadow: 0 0 4px rgba(192, 57, 43, 0.4); }
+        }
+      `}</style>
+
       {/* Topbar */}
       <div style={{ background: '#E1F5EE', borderBottom: '0.5px solid #5DCAA5' }}>
-  <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ width: 28, height: 28, borderRadius: 7, background: '#9FE1CB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <path d="M12 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" stroke="#085041" strokeWidth="1.5"/>
-          <path d="M3 18c0-3 2.5-5 5-5h8c2.5 0 5 2 5 5" stroke="#085041" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
+        <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: '#9FE1CB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" stroke="#085041" strokeWidth="1.5"/>
+                <path d="M3 18c0-3 2.5-5 5-5h8c2.5 0 5 2 5 5" stroke="#085041" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#04342C' }}>{profil?.name}</span>
+          </div>
+          <button onClick={abmelden} style={{ fontSize: 12, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer' }}>Abmelden</button>
+        </div>
+        <div style={{ padding: '0 20px 12px', display: 'flex', gap: 8 }}>
+          <button onClick={() => navigate('/hausmeister/stempeluhr')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#0F6E56', color: '#E1F5EE', border: 'none', cursor: 'pointer' }}>
+            ⏱ Stempeluhr
+          </button>
+          <button
+            onClick={() => navigate('/hausmeister/aufgabenplan')}
+            style={{
+              flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8,
+              background: offeneAufgaben > 0 ? '#C0392B' : '#E1F5EE',
+              color: offeneAufgaben > 0 ? 'white' : '#0F6E56',
+              border: offeneAufgaben > 0 ? 'none' : '0.5px solid #9FE1CB',
+              cursor: 'pointer',
+              animation: offeneAufgaben > 0 ? 'glow 1.5s ease-in-out infinite' : 'none',
+              position: 'relative',
+            }}>
+            📅 Aufgaben
+            {offeneAufgaben > 0 && (
+              <span style={{ marginLeft: 6, background: 'white', color: '#C0392B', borderRadius: 20, padding: '1px 7px', fontSize: 11, fontWeight: 700 }}>
+                {offeneAufgaben}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
-      <span style={{ fontSize: 14, fontWeight: 500, color: '#04342C' }}>{profil?.name}</span>
-    </div>
-    <button onClick={abmelden} style={{ fontSize: 12, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer' }}>Abmelden</button>
-  </div>
-  <div style={{ padding: '0 20px 12px', display: 'flex', gap: 8 }}>
-    <button onClick={() => navigate('/hausmeister/stempeluhr')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#0F6E56', color: '#E1F5EE', border: 'none', cursor: 'pointer' }}>
-      ⏱ Stempeluhr
-    </button>
-    <button onClick={() => navigate('/hausmeister/aufgabenplan')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#E1F5EE', color: '#0F6E56', border: '0.5px solid #9FE1CB', cursor: 'pointer' }}>
-      📅 Aufgaben
-    </button>
-  </div>
-</div>
 
       <div style={{ padding: 20, maxWidth: 480, margin: '0 auto' }}>
         {/* Metriken */}
