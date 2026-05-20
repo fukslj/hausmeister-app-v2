@@ -24,6 +24,7 @@ import AufgabenplanHausmeister from './pages/hausmeister/Aufgabenplan'
 import Fahrzeuge from './pages/admin/Fahrzeuge'
 import FahrzeugeHausmeister from './pages/hausmeister/Fahrzeuge'
 import Muellkalender from './pages/admin/Muellkalender'
+import MuellkalenderHausmeister from './pages/hausmeister/Muellkalender'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -62,6 +63,11 @@ export default function App() {
       <Route path="/hausmeister/fahrzeuge" element={
           <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
           <FahrzeugeHausmeister />
+      </GeschuetzteRoute>
+      } />
+      <Route path="/hausmeister/muellkalender" element={
+          <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+          <MuellkalenderHausmeister />
       </GeschuetzteRoute>
       } />
       <Route path="/hausmeister" element={
