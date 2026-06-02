@@ -8,9 +8,13 @@ export default function ObjektDetail() {
   const navigate = useNavigate()
   const [objekt, setObjekt] = useState(null)
   const [eingaenge, setEingaenge] = useState([])
+  const [aufgaben, setAufgaben] = useState([])
+  const [erledigungen, setErledigungen] = useState([])
   const [laden, setLaden] = useState(true)
   const [formOffen, setFormOffen] = useState(false)
+  const [aufgabeFormOffen, setAufgabeFormOffen] = useState(false)
   const [bezeichnung, setBezeichnung] = useState('')
+  const [neuAufgabe, setNeuAufgabe] = useState({ titel: '', beschreibung: '', wiederkehrend: 'einmalig' })
   const [speichern, setSpeichern] = useState(false)
   const [qrOffen, setQrOffen] = useState(null)
   const [bearbeiten, setBearbeiten] = useState(false)
@@ -18,6 +22,8 @@ export default function ObjektDetail() {
   const [eingangEdit, setEingangEdit] = useState(null)
   const [eingangEditWert, setEingangEditWert] = useState('')
   const [loeschenBestaetigung, setLoeschenBestaetigung] = useState(false)
+  const [aufgabeBearbeiten, setAufgabeBearbeiten] = useState(null)
+  const [aufgabeEditWert, setAufgabeEditWert] = useState({})
 
   useEffect(() => { ladeDaten() }, [id])
 
@@ -25,9 +31,17 @@ export default function ObjektDetail() {
     setLaden(true)
     const { data: obj } = await supabase.from('objekt').select('*').eq('id', id).single()
     const { data: ein } = await supabase.from('eingang').select('*').eq('objekt_id', id).order('bezeichnung')
+    const { data: auf } = await supabase.from('objekt_aufgabe').select('*').eq('objekt_id', id).eq('aktiv', true).order('reihenfolge')
+    const { data: erl } = await supabase
+      .from('objekt_aufgabe_erledigung')
+      .select('*, techniker(name)')
+      .in('aufgabe_id', auf?.map(a => a.id) || [])
+      .order('erledigt_am', { ascending: false })
     setObjekt(obj)
     setObjektEdit(obj || {})
     setEingaenge(ein || [])
+    setAufgaben(auf || [])
+    setErledigungen(erl || [])
     setLaden(false)
   }
 
@@ -68,6 +82,41 @@ export default function ObjektDetail() {
     ladeDaten()
   }
 
+  async function aufgabeAnlegen(e) {
+    e.preventDefault()
+    setSpeichern(true)
+    await supabase.from('objekt_aufgabe').insert({
+      objekt_id: id,
+      titel: neuAufgabe.titel,
+      beschreibung: neuAufgabe.beschreibung || null,
+      wiederkehrend: neuAufgabe.wiederkehrend,
+      reihenfolge: aufgaben.length,
+    })
+    setNeuAufgabe({ titel: '', beschreibung: '', wiederkehrend: 'einmalig' })
+    setAufgabeFormOffen(false)
+    setSpeichern(false)
+    ladeDaten()
+  }
+
+  async function aufgabeSpeichern(aufgabeId) {
+    await supabase.from('objekt_aufgabe').update({
+      titel: aufgabeEditWert.titel,
+      beschreibung: aufgabeEditWert.beschreibung || null,
+      wiederkehrend: aufgabeEditWert.wiederkehrend,
+    }).eq('id', aufgabeId)
+    setAufgabeBearbeiten(null)
+    ladeDaten()
+  }
+
+  async function aufgabeLoeschen(aufgabeId) {
+    await supabase.from('objekt_aufgabe').update({ aktiv: false }).eq('id', aufgabeId)
+    ladeDaten()
+  }
+
+  function letzteErledigung(aufgabeId) {
+    return erledigungen.find(e => e.aufgabe_id === aufgabeId)
+  }
+
   function qrUrl(token) {
     return `${window.location.origin}/melden/${token}`
   }
@@ -78,11 +127,19 @@ export default function ObjektDetail() {
     border: '0.5px solid #D3D1C7', width: '100%', outline: 'none',
   }
 
+  const wiederkehrendLabel = {
+    einmalig: 'Einmalig',
+    taeglich: 'Täglich',
+    woechentlich: 'Wöchentlich',
+    monatlich: 'Monatlich',
+    quartalsweise: 'Quartalsweise',
+    jaehrlich: 'Jährlich',
+  }
+
   if (laden) return <div style={{ padding: 40, fontFamily: 'var(--font)', color: '#888780', textAlign: 'center' }}>Laden…</div>
 
   return (
     <div style={{ fontFamily: 'var(--font)', minHeight: '100vh', background: '#F1EFE8' }}>
-      {/* Topbar */}
       <div style={{ background: '#F1EFE8', padding: '14px 20px', borderBottom: '0.5px solid #D3D1C7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span onClick={() => navigate('/admin/objekte')} style={{ fontSize: 12, color: '#888780', cursor: 'pointer' }}>← Objekte</span>
@@ -95,7 +152,7 @@ export default function ObjektDetail() {
 
       <div style={{ padding: 20, maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Objekt-Info / Bearbeiten */}
+        {/* Objekt-Info */}
         <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20 }}>
           {bearbeiten ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -130,7 +187,7 @@ export default function ObjektDetail() {
         {loeschenBestaetigung && (
           <div style={{ background: '#FDECEB', border: '0.5px solid #F5C6C2', borderRadius: 12, padding: 16 }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: '#C0392B', marginBottom: 6 }}>Objekt wirklich löschen?</div>
-            <div style={{ fontSize: 12, color: '#888780', marginBottom: 14 }}>Alle Eingänge und Meldungen werden ebenfalls gelöscht. Dies kann nicht rückgängig gemacht werden.</div>
+            <div style={{ fontSize: 12, color: '#888780', marginBottom: 14 }}>Alle Eingänge und Meldungen werden ebenfalls gelöscht.</div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setLoeschenBestaetigung(false)} style={{ flex: 1, height: 36, borderRadius: 8, background: 'white', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
               <button onClick={objektLoeschen} style={{ flex: 1, height: 36, borderRadius: 8, background: '#C0392B', color: 'white', border: 'none', fontSize: 13, cursor: 'pointer' }}>Ja, löschen</button>
@@ -155,17 +212,15 @@ export default function ObjektDetail() {
         {/* Eingänge */}
         <div style={{ fontSize: 13, fontWeight: 500, color: '#888780' }}>Eingänge</div>
         {eingaenge.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Noch keine Eingänge angelegt</div>
+          <div style={{ textAlign: 'center', padding: 20, color: '#888780', fontSize: 13 }}>Noch keine Eingänge angelegt</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {eingaenge.map(ein => (
               <div key={ein.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '16px 20px' }}>
-
-                {/* Eingang Header */}
                 {eingangEdit === ein.id ? (
                   <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                     <input style={{ ...inputStyle, marginBottom: 0 }} value={eingangEditWert} onChange={e => setEingangEditWert(e.target.value)} />
-                    <button onClick={() => eingangSpeichern(ein.id)} style={{ height: 40, padding: '0 14px', borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>OK</button>
+                    <button onClick={() => eingangSpeichern(ein.id)} style={{ height: 40, padding: '0 14px', borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>OK</button>
                     <button onClick={() => setEingangEdit(null)} style={{ height: 40, padding: '0 14px', borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>✕</button>
                   </div>
                 ) : (
@@ -180,14 +235,10 @@ export default function ObjektDetail() {
                     </div>
                   </div>
                 )}
-
-                {/* QR */}
-                <button
-                  onClick={() => setQrOffen(qrOffen === ein.id ? null : ein.id)}
+                <button onClick={() => setQrOffen(qrOffen === ein.id ? null : ein.id)}
                   style={{ fontSize: 11, fontWeight: 500, padding: '5px 12px', borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer', width: '100%' }}>
                   {qrOffen === ein.id ? 'QR-Code schließen' : 'QR-Code anzeigen'}
                 </button>
-
                 {qrOffen === ein.id && (
                   <div style={{ marginTop: 12, padding: 16, background: '#F8F7F2', borderRadius: 8, border: '0.5px solid #D3D1C7' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, background: 'white', padding: 16, borderRadius: 8 }}>
@@ -205,6 +256,96 @@ export default function ObjektDetail() {
             ))}
           </div>
         )}
+
+        {/* Aufgabenliste */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#888780' }}>Aufgabenliste</div>
+          <button onClick={() => setAufgabeFormOffen(true)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#444441', color: '#F1EFE8', border: 'none', cursor: 'pointer' }}>+ Aufgabe</button>
+        </div>
+
+        {/* Neue Aufgabe */}
+        {aufgabeFormOffen && (
+          <form onSubmit={aufgabeAnlegen} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 16 }}>Neue Aufgabe</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              <input style={inputStyle} placeholder="Titel der Aufgabe" value={neuAufgabe.titel} onChange={e => setNeuAufgabe({...neuAufgabe, titel: e.target.value})} required />
+              <textarea style={{ ...inputStyle, height: 72, padding: '10px 12px', resize: 'none' }} placeholder="Beschreibung (optional)" value={neuAufgabe.beschreibung} onChange={e => setNeuAufgabe({...neuAufgabe, beschreibung: e.target.value})} />
+              <select style={inputStyle} value={neuAufgabe.wiederkehrend} onChange={e => setNeuAufgabe({...neuAufgabe, wiederkehrend: e.target.value})}>
+                <option value="einmalig">Einmalig</option>
+                <option value="taeglich">Täglich</option>
+                <option value="woechentlich">Wöchentlich</option>
+                <option value="monatlich">Monatlich</option>
+                <option value="quartalsweise">Quartalsweise</option>
+                <option value="jaehrlich">Jährlich</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => setAufgabeFormOffen(false)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+              <button type="submit" disabled={speichern} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>
+                {speichern ? 'Wird gespeichert…' : 'Speichern'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {aufgaben.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 20, color: '#888780', fontSize: 13 }}>Noch keine Aufgaben angelegt</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {aufgaben.map((a, idx) => {
+              const erledigung = letzteErledigung(a.id)
+              return (
+                <div key={a.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '14px 16px' }}>
+                  {aufgabeBearbeiten === a.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <input style={inputStyle} value={aufgabeEditWert.titel} onChange={e => setAufgabeEditWert({...aufgabeEditWert, titel: e.target.value})} />
+                      <textarea style={{ ...inputStyle, height: 60, padding: '10px 12px', resize: 'none' }} value={aufgabeEditWert.beschreibung || ''} onChange={e => setAufgabeEditWert({...aufgabeEditWert, beschreibung: e.target.value})} />
+                      <select style={inputStyle} value={aufgabeEditWert.wiederkehrend} onChange={e => setAufgabeEditWert({...aufgabeEditWert, wiederkehrend: e.target.value})}>
+                        <option value="einmalig">Einmalig</option>
+                        <option value="taeglich">Täglich</option>
+                        <option value="woechentlich">Wöchentlich</option>
+                        <option value="monatlich">Monatlich</option>
+                        <option value="quartalsweise">Quartalsweise</option>
+                        <option value="jaehrlich">Jährlich</option>
+                      </select>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => setAufgabeBearbeiten(null)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+                        <button onClick={() => aufgabeSpeichern(a.id)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>Speichern</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                          <span style={{ fontSize: 11, color: '#888780' }}>{idx + 1}.</span>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{a.titel}</div>
+                        </div>
+                        {a.beschreibung && <div style={{ fontSize: 12, color: '#5F5E5A', marginBottom: 4, paddingLeft: 16 }}>{a.beschreibung}</div>}
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingLeft: 16 }}>
+                          <span style={{ fontSize: 10, padding: '1px 8px', borderRadius: 20, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7' }}>
+                            {wiederkehrendLabel[a.wiederkehrend]}
+                          </span>
+                          {erledigung && (
+                            <span style={{ fontSize: 10, color: '#2E7D32' }}>
+                              ✓ {erledigung.techniker?.name} · {new Date(erledigung.erledigt_am).toLocaleDateString('de-DE')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 8 }}>
+                        <button onClick={() => { setAufgabeBearbeiten(a.id); setAufgabeEditWert({ titel: a.titel, beschreibung: a.beschreibung, wiederkehrend: a.wiederkehrend }) }}
+                          style={{ fontSize: 11, padding: '4px 8px', borderRadius: 7, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>✏</button>
+                        <button onClick={() => aufgabeLoeschen(a.id)}
+                          style={{ fontSize: 11, padding: '4px 8px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>×</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
       </div>
     </div>
   )
