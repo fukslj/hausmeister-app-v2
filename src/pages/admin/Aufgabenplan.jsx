@@ -68,7 +68,7 @@ export default function Aufgabenplan() {
     if (zeilen.length < 2) { alert('CSV hat zu wenig Zeilen'); return }
 
     const trennzeichen = zeilen[0].includes(';') ? ';' : ','
-    const kopf = zeilen[0].split(trennzeichen).map(s => s.trim().toLowerCase().replace(/"/g, ''))
+    const kopf = zeilen[0].split(trennzeichen).map(s => s.trim().toLowerCase().replace(/"/g, '').replace(/^\uFEFF/, '').replace(/^\u00ef\u00bb\u00bf/, ''))
 
     const inserts = []
     const fehlerZeilen = []
