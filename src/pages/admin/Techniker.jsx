@@ -69,21 +69,37 @@ export default function Techniker() {
   setSpeichern(true)
   setFehler('')
 
-  const { data: { session } } = await supabase.auth.getSession()
-
-const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/techniker-anlegen`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session.access_token}`,
-  },
-  body: JSON.stringify({
-    name: neu.name,
-    pin: neu.pin,
-    service_id: neu.service_id,
-    rolle: neu.rolle,
-  })
-})
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/techniker-anlegen`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        name: neu.name,
+        pin: neu.pin,
+        service_id: neu.service_id,
+        rolle: neu.rolle,
+      })
+    })
+    const data = await response.json()
+    if (!response.ok || data?.error) {
+      setFehler('Fehler: ' + (data?.error || 'Unbekannter Fehler'))
+      setSpeichern(false)
+      return
+    }
+    setNeu({ name: '', pin: '', rolle: 'techniker', user_id: '', service_id: '' })
+    setFormOffen(false)
+    setSchritt(1)
+    setSpeichern(false)
+    ladeTechniker()
+  } catch (err) {
+    setFehler('Fehler: ' + err.message)
+    setSpeichern(false)
+  }
+}
 
 const data = await response.json()
 
