@@ -8,6 +8,7 @@ export default function Aufgabenplan() {
   const { profil } = useAuth()
   const [aufgaben, setAufgaben] = useState([])
   const [laden, setLaden] = useState(true)
+  const [ansichtAufgabe, setAnsichtAufgabe] = useState(null)
   const [filterMonat, setFilterMonat] = useState(() => {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -78,6 +79,54 @@ export default function Aufgabenplan() {
         {/* Monatsfilter */}
         <input type="month" style={inputStyle} value={filterMonat} onChange={e => setFilterMonat(e.target.value)} />
 
+        {/* Aufgabe Ansehen */}
+        {ansichtAufgabe && (
+          <div style={{ background: '#E1F5EE', border: '0.5px solid #9FE1CB', borderRadius: 12, padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: '#04342C' }}>Aufgabe</div>
+              <button onClick={() => setAnsichtAufgabe(null)} style={{ fontSize: 12, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Schließen</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.7)', borderRadius: 8 }}>
+                <div style={{ fontSize: 11, color: '#0F6E56', marginBottom: 3 }}>Titel</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#04342C' }}>{ansichtAufgabe.titel}</div>
+              </div>
+              {ansichtAufgabe.beschreibung && (
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.7)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#0F6E56', marginBottom: 3 }}>Beschreibung</div>
+                  <div style={{ fontSize: 13, color: '#04342C' }}>{ansichtAufgabe.beschreibung}</div>
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.7)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#0F6E56', marginBottom: 3 }}>Objekt</div>
+                  <div style={{ fontSize: 13, color: '#04342C' }}>{ansichtAufgabe.objekt?.strasse} {ansichtAufgabe.objekt?.hausnummer}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.7)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#0F6E56', marginBottom: 3 }}>Fällig am</div>
+                  <div style={{ fontSize: 13, color: '#04342C' }}>{new Date(ansichtAufgabe.faellig_am).toLocaleDateString('de-DE')}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.7)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#0F6E56', marginBottom: 3 }}>Häufigkeit</div>
+                  <div style={{ fontSize: 13, color: '#04342C' }}>{ansichtAufgabe.wiederkehrend}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.7)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#0F6E56', marginBottom: 3 }}>Status</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: ansichtAufgabe.status === 'erledigt' ? '#2E7D32' : ansichtAufgabe.status === 'in_arbeit' ? '#0C5460' : '#856404' }}>
+                    {ansichtAufgabe.status === 'offen' ? 'Offen' : ansichtAufgabe.status === 'in_arbeit' ? 'In Arbeit' : 'Erledigt'}
+                  </div>
+                </div>
+              </div>
+              {ansichtAufgabe.status !== 'erledigt' && (
+                <button onClick={() => { statusAendern(ansichtAufgabe.id, ansichtAufgabe.status === 'offen' ? 'in_arbeit' : 'erledigt'); setAnsichtAufgabe(null) }}
+                  style={{ width: '100%', height: 36, borderRadius: 8, background: ansichtAufgabe.status === 'offen' ? '#0F6E56' : '#2E7D32', color: '#E1F5EE', border: 'none', fontSize: 13, cursor: 'pointer' }}>
+                  {ansichtAufgabe.status === 'offen' ? 'Starten' : '✓ Als erledigt markieren'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Liste */}
         {laden ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Laden…</div>
@@ -103,12 +152,18 @@ export default function Aufgabenplan() {
                       {badge.text}
                     </span>
                   </div>
-                  {a.status !== 'erledigt' && (
-                    <button onClick={() => statusAendern(a.id, a.status === 'offen' ? 'in_arbeit' : 'erledigt')}
-                      style={{ width: '100%', height: 36, borderRadius: 8, background: a.status === 'offen' ? '#E1F5EE' : '#E8F5E9', color: a.status === 'offen' ? '#0F6E56' : '#2E7D32', border: `0.5px solid ${a.status === 'offen' ? '#9FE1CB' : '#A5D6A7'}`, fontSize: 13, cursor: 'pointer' }}>
-                      {a.status === 'offen' ? 'Starten' : '✓ Als erledigt markieren'}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => setAnsichtAufgabe(a)}
+                      style={{ flex: 1, height: 36, borderRadius: 8, background: '#F8F7F2', color: '#5F5E5A', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>
+                      Ansehen
                     </button>
-                  )}
+                    {a.status !== 'erledigt' && (
+                      <button onClick={() => statusAendern(a.id, a.status === 'offen' ? 'in_arbeit' : 'erledigt')}
+                        style={{ flex: 2, height: 36, borderRadius: 8, background: a.status === 'offen' ? '#E1F5EE' : '#E8F5E9', color: a.status === 'offen' ? '#0F6E56' : '#2E7D32', border: `0.5px solid ${a.status === 'offen' ? '#9FE1CB' : '#A5D6A7'}`, fontSize: 13, cursor: 'pointer' }}>
+                        {a.status === 'offen' ? 'Starten' : '✓ Als erledigt markieren'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )
             })}
