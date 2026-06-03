@@ -69,14 +69,29 @@ export default function Techniker() {
   setSpeichern(true)
   setFehler('')
 
-  const { data, error } = await supabase.functions.invoke('techniker-anlegen', {
-    body: {
-      name: neu.name,
-      pin: neu.pin,
-      service_id: neu.service_id,
-      rolle: neu.rolle,
-    }
+  const { data: { session } } = await supabase.auth.getSession()
+
+const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/techniker-anlegen`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`,
+  },
+  body: JSON.stringify({
+    name: neu.name,
+    pin: neu.pin,
+    service_id: neu.service_id,
+    rolle: neu.rolle,
   })
+})
+
+const data = await response.json()
+
+if (!response.ok || data?.error) {
+  setFehler('Fehler: ' + (data?.error || 'Unbekannter Fehler'))
+  setSpeichern(false)
+  return
+}
 
   if (error || data?.error) {
     setFehler('Fehler: ' + (data?.error || error.message))
