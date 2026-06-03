@@ -14,6 +14,8 @@ export default function Einkauf() {
     objekt_id: '', artikel: '', menge: 1, einheit: 'Stück',
     preis: '', kategorie: 'sonstiges', notiz: '', gekauft_am: new Date().toISOString().split('T')[0]
   })
+  const [foto, setFoto] = useState(null)
+  const [fotoPreview, setFotoPreview] = useState(null)
   const [speichern, setSpeichern] = useState(false)
   const [filterMonat, setFilterMonat] = useState(() => {
     const d = new Date()
@@ -28,7 +30,9 @@ export default function Einkauf() {
     setLaden(true)
     const { data: tobj } = await supabase.from('techniker_objekt').select('objekt_id').eq('techniker_id', profil.id)
     const objektIds = tobj?.map(t => t.objekt_id) || []
-    const { data: o } = await supabase.from('objekt').select('id, strasse, hausnummer').in('id', objektIds.length > 0 ? objektIds : ['00000000-0000-0000-0000-000000000000']).order('strasse')
+    const { data: o } = await supabase.from('objekt').select('id, strasse, hausnummer')
+      .in('id', objektIds.length > 0 ? objektIds : ['00000000-0000-0000-0000-000000000000'])
+      .order('strasse')
     const { data: e } = await supabase
       .from('einkauf')
       .select('*, objekt(strasse, hausnummer)')
@@ -42,6 +46,18 @@ export default function Einkauf() {
   async function einkaufAnlegen(e) {
     e.preventDefault()
     setSpeichern(true)
+
+    let foto_url = null
+    if (foto) {
+      const ext = foto.name.split('.').pop()
+      const pfad = `${profil.id}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage.from('einkauf-fotos').upload(pfad, foto)
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from('einkauf-fotos').getPublicUrl(pfad)
+        foto_url = publicUrl
+      }
+    }
+
     await supabase.from('einkauf').insert({
       objekt_id: neu.objekt_id,
       techniker_id: profil.id,
@@ -52,11 +68,22 @@ export default function Einkauf() {
       kategorie: neu.kategorie,
       notiz: neu.notiz || null,
       gekauft_am: neu.gekauft_am,
+      foto_url,
     })
     setNeu({ objekt_id: '', artikel: '', menge: 1, einheit: 'Stück', preis: '', kategorie: 'sonstiges', notiz: '', gekauft_am: new Date().toISOString().split('T')[0] })
+    setFoto(null)
+    setFotoPreview(null)
     setFormOffen(false)
     setSpeichern(false)
     ladeDaten()
+  }
+
+  function fotoAuswaehlen(e) {
+    const f = e.target.files[0]
+    if (f) {
+      setFoto(f)
+      setFotoPreview(URL.createObjectURL(f))
+    }
   }
 
   function gefilterteEinkaufe() {
@@ -126,10 +153,32 @@ export default function Einkauf() {
                 <option value="sonstiges">Sonstiges</option>
               </select>
               <textarea style={{ ...inputStyle, height: 60, padding: '10px 12px', resize: 'none' }} placeholder="Notiz (optional)" value={neu.notiz} onChange={e => setNeu({...neu, notiz: e.target.value})} />
+
+              {/* Foto Upload */}
+              <label style={{ display: 'flex', height: 60, borderRadius: 8, border: '1px dashed #9FE1CB', background: 'rgba(255,255,255,0.5)', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, color: '#0F6E56', gap: 8 }}>
+                {fotoPreview ? (
+                  <img src={fotoPreview} alt="" style={{ height: 50, borderRadius: 6, objectFit: 'cover' }} />
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
+                    </svg>
+                    Kassenbon / Foto (optional)
+                  </>
+                )}
+                <input type="file" accept="image/*" capture="environment" onChange={fotoAuswaehlen} style={{ display: 'none' }} />
+              </label>
+              {fotoPreview && (
+                <button type="button" onClick={() => { setFoto(null); setFotoPreview(null) }}
+                  style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: 'rgba(255,255,255,0.5)', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                  Foto entfernen
+                </button>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={() => setFormOffen(false)} style={{ flex: 1, height: 36, borderRadius: 8, background: 'rgba(255,255,255,0.5)', color: '#0F6E56', border: '0.5px solid #9FE1CB', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
-              <button type="submit" disabled={speichern} style={{ flex: 1, height: 36, borderRadius: 8, background: '#0F6E56', color: '#E1F5EE', border: 'none', fontSize: 13, cursor: 'pointer' }}>
+              <button type="button" onClick={() => { setFormOffen(false); setFoto(null); setFotoPreview(null) }} style={{ flex: 1, height: 36, borderRadius: 8, background: 'rgba(255,255,255,0.5)', color: '#0F6E56', border: '0.5px solid #9FE1CB', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+              <button type="submit" disabled={speichern} style={{ flex: 1, height: 36, borderRadius: 8, background: '#0F6E56', color: '#E1F5EE', border: 'none', fontSize: 13, cursor: 'pointer', opacity: speichern ? 0.6 : 1 }}>
                 {speichern ? 'Wird gespeichert…' : 'Speichern'}
               </button>
             </div>
@@ -155,7 +204,7 @@ export default function Einkauf() {
               const badge = kategorieBadge(e.kategorie)
               return (
                 <div key={e.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: e.foto_url ? 10 : 0 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{e.artikel}</div>
                       <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>{e.objekt?.strasse} {e.objekt?.hausnummer}</div>
@@ -167,6 +216,10 @@ export default function Einkauf() {
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: badge.bg, color: badge.color }}>{e.kategorie}</span>
                     </div>
                   </div>
+                  {e.foto_url && (
+                    <img src={e.foto_url} alt="Kassenbon" onClick={() => window.open(e.foto_url, '_blank')}
+                      style={{ width: '100%', maxHeight: 120, objectFit: 'cover', borderRadius: 8, cursor: 'pointer' }} />
+                  )}
                 </div>
               )
             })}
