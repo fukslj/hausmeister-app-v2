@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
@@ -9,6 +9,7 @@ export default function Aufgabenplan() {
   const [techniker, setTechniker] = useState([])
   const [laden, setLaden] = useState(true)
   const [formOffen, setFormOffen] = useState(false)
+  const [importOffen, setImportOffen] = useState(false)
   const [neu, setNeu] = useState({
     objekt_id: '', techniker_id: '', titel: '',
     beschreibung: '', faellig_am: '', wiederkehrend: 'einmalig'
@@ -19,6 +20,7 @@ export default function Aufgabenplan() {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
+  const csvInputRef = useRef(null)
 
   useEffect(() => { ladeDaten() }, [])
 
@@ -53,6 +55,110 @@ export default function Aufgabenplan() {
     setFormOffen(false)
     setSpeichern(false)
     ladeDaten()
+  }
+
+  async function csvImport(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const buffer = await file.arrayBuffer()
+    const decoder = new TextDecoder('iso-8859-1')
+    const text = decoder.decode(buffer)
+    const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
+    if (zeilen.length < 2) { alert('CSV hat zu wenig Zeilen'); return }
+
+    const trennzeichen = zeilen[0].includes(';') ? ';' : ','
+    const kopf = zeilen[0].split(trennzeichen).map(s => s.trim().toLowerCase().replace(/"/g, ''))
+
+    const inserts = []
+    const fehlerZeilen = []
+
+    for (let i = 1; i < zeilen.length; i++) {
+      const werte = zeilen[i].split(trennzeichen).map(s => s.trim().replace(/"/g, ''))
+      const row = {}
+      kopf.forEach((k, idx) => row[k] = werte[idx] || '')
+
+      // Objekt suchen
+      const objekt = objekte.find(o =>
+        `${o.strasse} ${o.hausnummer}`.toLowerCase() === row['objekt']?.toLowerCase()
+      )
+      if (!objekt) { fehlerZeilen.push(`Zeile ${i + 1}: Objekt "${row['objekt']}" nicht gefunden`); continue }
+
+      // Techniker suchen (optional)
+      const tech = techniker.find(t => t.name.toLowerCase() === row['techniker']?.toLowerCase())
+
+      // Datum parsen TT.MM.YYYY oder YYYY-MM-DD
+      let datum = ''
+      const datumRaw = row['datum'] || ''
+      if (datumRaw.includes('.')) {
+        const teile = datumRaw.split('.')
+        if (teile.length === 3) datum = `${teile[2]}-${teile[1].padStart(2,'0')}-${teile[0].padStart(2,'0')}`
+      } else {
+        datum = datumRaw
+      }
+      if (!datum) { fehlerZeilen.push(`Zeile ${i + 1}: Ungültiges Datum "${datumRaw}"`); continue }
+
+      // Häufigkeit mappen
+      const haeufigkeitMap = {
+        'einmalig': 'einmalig', 'monatlich': 'monatlich',
+        'quartalsweise': 'quartalsweise', 'jährlich': 'jaehrlich',
+        'jaehrlich': 'jaehrlich', 'wöchentlich': 'woechentlich',
+        'woechentlich': 'woechentlich', 'täglich': 'taeglich', 'taeglich': 'taeglich'
+      }
+      const haeufigkeit = haeufigkeitMap[row['häufigkeit']?.toLowerCase() || row['haeufigkeit']?.toLowerCase() || 'einmalig'] || 'einmalig'
+
+      inserts.push({
+        objekt_id: objekt.id,
+        techniker_id: tech?.id || null,
+        titel: row['titel'] || 'Ohne Titel',
+        faellig_am: datum,
+        wiederkehrend: haeufigkeit,
+      })
+    }
+
+    if (fehlerZeilen.length > 0) {
+      alert(`Folgende Zeilen konnten nicht importiert werden:\n${fehlerZeilen.join('\n')}`)
+    }
+
+    if (inserts.length > 0) {
+      const { error } = await supabase.from('aufgabenplan').insert(inserts)
+      if (!error) {
+        alert(`${inserts.length} Aufgaben erfolgreich importiert`)
+        ladeDaten()
+        setImportOffen(false)
+      } else {
+        alert('Fehler beim Import: ' + error.message)
+      }
+    }
+    e.target.value = ''
+  }
+
+  function csvExport() {
+    const bom = '\uFEFF'
+    const kopf = 'Objekt;Techniker;Titel;Datum;Häufigkeit'
+    const zeilen = aufgaben.map(a =>
+      `${a.objekt?.strasse} ${a.objekt?.hausnummer};${a.techniker?.name || ''};${a.titel};${new Date(a.faellig_am).toLocaleDateString('de-DE')};${a.wiederkehrend}`
+    )
+    const csv = bom + [kopf, ...zeilen].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `aufgabenplan_${filterMonat}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function beispielExport() {
+    const bom = '\uFEFF'
+    const inhalt = `Objekt;Techniker;Titel;Datum;Häufigkeit\nErnst-Putz-Str. 43;S. Samchenko;Heizung prüfen;15.01.2026;monatlich\nErnst-Putz-Str. 43;;Dach kontrollieren;20.01.2026;jährlich\nErnst-Putz-Str. 43;S. Samchenko;Treppe reinigen;05.01.2026;wöchentlich`
+    const blob = new Blob([bom + inhalt], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'aufgabenplan_beispiel.csv'
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   async function statusAendern(id, status) {
@@ -91,12 +197,46 @@ export default function Aufgabenplan() {
           <span onClick={() => navigate('/admin')} style={{ fontSize: 12, color: '#888780', cursor: 'pointer' }}>← Zurück</span>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>Aufgabenplan</span>
         </div>
-        <button onClick={() => setFormOffen(true)} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', cursor: 'pointer' }}>
-          + Neu
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setImportOffen(!importOffen)} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>
+            CSV
+          </button>
+          <button onClick={() => setFormOffen(true)} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', cursor: 'pointer' }}>
+            + Neu
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: 20, maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* CSV Import/Export */}
+        {importOffen && (
+          <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 8 }}>CSV Import / Export</div>
+            <div style={{ fontSize: 12, color: '#888780', marginBottom: 16, padding: '10px 12px', background: '#F8F7F2', borderRadius: 8, lineHeight: 1.8 }}>
+              <strong style={{ color: '#2C2C2A' }}>Spalten:</strong> Objekt · Techniker · Titel · Datum · Häufigkeit<br/>
+              <strong style={{ color: '#2C2C2A' }}>Datum:</strong> TT.MM.YYYY oder YYYY-MM-DD<br/>
+              <strong style={{ color: '#2C2C2A' }}>Häufigkeit:</strong> einmalig · monatlich · quartalsweise · jährlich · wöchentlich · täglich<br/>
+              <strong style={{ color: '#2C2C2A' }}>Trennzeichen:</strong> Semikolon oder Komma
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button onClick={beispielExport} style={{ height: 36, borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>
+                📥 Beispiel-CSV herunterladen
+              </button>
+              <button onClick={csvExport} style={{ height: 36, borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>
+                📤 Aktuellen Plan exportieren
+              </button>
+              <div onClick={() => csvInputRef.current?.click()}
+                style={{ height: 52, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, color: '#444441' }}>
+                📂 CSV importieren
+              </div>
+              <input ref={csvInputRef} type="file" accept=".csv" onChange={csvImport} style={{ display: 'none' }} />
+              <button onClick={() => setImportOffen(false)} style={{ height: 36, borderRadius: 8, background: 'transparent', color: '#888780', border: 'none', fontSize: 13, cursor: 'pointer' }}>
+                Schließen
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Formular */}
         {formOffen && (
