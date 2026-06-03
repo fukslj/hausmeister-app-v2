@@ -10,6 +10,7 @@ export default function Aufgabenplan() {
   const [laden, setLaden] = useState(true)
   const [formOffen, setFormOffen] = useState(false)
   const [importOffen, setImportOffen] = useState(false)
+  const [ansichtAufgabe, setAnsichtAufgabe] = useState(null)
   const [neu, setNeu] = useState({
     objekt_id: '', techniker_id: '', titel: '',
     beschreibung: '', faellig_am: '', wiederkehrend: 'einmalig'
@@ -21,7 +22,6 @@ export default function Aufgabenplan() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
   const csvInputRef = useRef(null)
-  const [ansichtAufgabe, setAnsichtAufgabe] = useState(null)
 
   useEffect(() => { ladeDaten() }, [])
 
@@ -59,32 +59,21 @@ export default function Aufgabenplan() {
   }
 
   async function csvImport(e) {
-  const file = e.target.files[0]
-  if (!file) return
+    const file = e.target.files[0]
+    if (!file) return
 
-  // Versuche zuerst UTF-8, dann ISO-8859-1
-  let text = await file.text()
-  
-  // Prüfe ob Umlaute kaputt sind (ISO-8859-1 Indikator)
-  if (text.includes('Ã') || text.includes('ï»¿')) {
-    const buffer = await file.arrayBuffer()
-    const decoder = new TextDecoder('iso-8859-1')
-    text = decoder.decode(buffer)
-  }
-  
-  // BOM entfernen
-  text = text.replace(/^\uFEFF/, '')
-  
-  const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
+    let text = await file.text()
+    if (text.includes('\uFFFD') || text.includes('Ã') || text.includes('ï»¿')) {
+      const buffer = await file.arrayBuffer()
+      text = new TextDecoder('iso-8859-1').decode(buffer)
+    }
+    text = text.replace(/^\uFEFF/, '')
 
-    // UTF-8 lesen, BOM entfernen
-    const text = await file.text()
-    const cleaned = text.replace(/^\uFEFF/, '')
-    const zeilen = cleaned.replace(/\r/g, '').split('\n').filter(z => z.trim())
+    const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
     if (zeilen.length < 2) { alert('CSV hat zu wenig Zeilen'); return }
 
     const trennzeichen = zeilen[0].includes(';') ? ';' : ','
-    const kopf = zeilen[0].split(trennzeichen).map(s => s.trim().toLowerCase().replace(/"/g, ''))
+    const kopf = zeilen[0].split(trennzeichen).map(s => s.trim().toLowerCase().replace(/"/g, '').replace(/^\uFEFF/, ''))
 
     const inserts = []
     const fehlerZeilen = []
@@ -94,16 +83,13 @@ export default function Aufgabenplan() {
       const row = {}
       kopf.forEach((k, idx) => row[k] = werte[idx] || '')
 
-      // Objekt suchen
       const objekt = objekte.find(o =>
         `${o.strasse} ${o.hausnummer}`.toLowerCase() === row['objekt']?.toLowerCase()
       )
       if (!objekt) { fehlerZeilen.push(`Zeile ${i + 1}: Objekt "${row['objekt']}" nicht gefunden`); continue }
 
-      // Techniker suchen (optional)
       const tech = techniker.find(t => t.name.toLowerCase() === row['techniker']?.toLowerCase())
 
-      // Datum parsen TT.MM.YYYY oder YYYY-MM-DD
       let datum = ''
       const datumRaw = row['datum'] || ''
       if (datumRaw.includes('.')) {
@@ -114,17 +100,11 @@ export default function Aufgabenplan() {
       }
       if (!datum) { fehlerZeilen.push(`Zeile ${i + 1}: Ungültiges Datum "${datumRaw}"`); continue }
 
-      // Häufigkeit mappen
       const haeufigkeitMap = {
-        'einmalig': 'einmalig',
-        'monatlich': 'monatlich',
-        'quartalsweise': 'quartalsweise',
-        'jährlich': 'jaehrlich',
-        'jaehrlich': 'jaehrlich',
-        'wöchentlich': 'woechentlich',
-        'woechentlich': 'woechentlich',
-        'täglich': 'taeglich',
-        'taeglich': 'taeglich',
+        'einmalig': 'einmalig', 'monatlich': 'monatlich',
+        'quartalsweise': 'quartalsweise', 'jährlich': 'jaehrlich',
+        'jaehrlich': 'jaehrlich', 'wöchentlich': 'woechentlich',
+        'woechentlich': 'woechentlich', 'täglich': 'taeglich', 'taeglich': 'taeglich',
       }
       const haeufigkeitRaw = row['häufigkeit'] || row['haeufigkeit'] || row['haufigkeit'] || 'einmalig'
       const haeufigkeit = haeufigkeitMap[haeufigkeitRaw.toLowerCase()] || 'einmalig'
@@ -138,19 +118,12 @@ export default function Aufgabenplan() {
       })
     }
 
-    if (fehlerZeilen.length > 0) {
-      alert(`Folgende Zeilen konnten nicht importiert werden:\n${fehlerZeilen.join('\n')}`)
-    }
+    if (fehlerZeilen.length > 0) alert(`Nicht importiert:\n${fehlerZeilen.join('\n')}`)
 
     if (inserts.length > 0) {
       const { error } = await supabase.from('aufgabenplan').insert(inserts)
-      if (!error) {
-        alert(`${inserts.length} Aufgaben erfolgreich importiert`)
-        ladeDaten()
-        setImportOffen(false)
-      } else {
-        alert('Fehler beim Import: ' + error.message)
-      }
+      if (!error) { alert(`${inserts.length} Aufgaben importiert`); ladeDaten(); setImportOffen(false) }
+      else alert('Fehler: ' + error.message)
     }
     e.target.value = ''
   }
@@ -223,18 +196,14 @@ export default function Aufgabenplan() {
           <span style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>Aufgabenplan</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setImportOffen(!importOffen)} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>
-            CSV
-          </button>
-          <button onClick={() => setFormOffen(true)} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', cursor: 'pointer' }}>
-            + Neu
-          </button>
+          <button onClick={() => setImportOffen(!importOffen)} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>CSV</button>
+          <button onClick={() => setFormOffen(true)} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', cursor: 'pointer' }}>+ Neu</button>
         </div>
       </div>
 
       <div style={{ padding: 20, maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* CSV Import/Export */}
+        {/* CSV */}
         {importOffen && (
           <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20 }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 8 }}>CSV Import / Export</div>
@@ -245,20 +214,13 @@ export default function Aufgabenplan() {
               <strong style={{ color: '#2C2C2A' }}>Trennzeichen:</strong> Semikolon oder Komma
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button onClick={beispielExport} style={{ height: 36, borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>
-                📥 Beispiel-CSV herunterladen
-              </button>
-              <button onClick={csvExport} style={{ height: 36, borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>
-                📤 Aktuellen Plan exportieren
-              </button>
-              <div onClick={() => csvInputRef.current?.click()}
-                style={{ height: 52, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, color: '#444441' }}>
+              <button onClick={beispielExport} style={{ height: 36, borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>📥 Beispiel-CSV herunterladen</button>
+              <button onClick={csvExport} style={{ height: 36, borderRadius: 8, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>📤 Aktuellen Plan exportieren</button>
+              <div onClick={() => csvInputRef.current?.click()} style={{ height: 52, borderRadius: 8, border: '1px dashed #D3D1C7', background: '#F8F7F2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 13, color: '#444441' }}>
                 📂 CSV importieren
               </div>
               <input ref={csvInputRef} type="file" accept=".csv" onChange={csvImport} style={{ display: 'none' }} />
-              <button onClick={() => setImportOffen(false)} style={{ height: 36, borderRadius: 8, background: 'transparent', color: '#888780', border: 'none', fontSize: 13, cursor: 'pointer' }}>
-                Schließen
-              </button>
+              <button onClick={() => setImportOffen(false)} style={{ height: 36, borderRadius: 8, background: 'transparent', color: '#888780', border: 'none', fontSize: 13, cursor: 'pointer' }}>Schließen</button>
             </div>
           </div>
         )}
@@ -295,51 +257,53 @@ export default function Aufgabenplan() {
             </div>
           </form>
         )}
-        {/* Aufgabe Ansehen Modal */}
-{ansichtAufgabe && (
-  <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20 }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-      <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>Aufgabe</div>
-      <button onClick={() => setAnsichtAufgabe(null)} style={{ fontSize: 12, color: '#888780', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Schließen</button>
-    </div>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
-        <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Titel</div>
-        <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{ansichtAufgabe.titel}</div>
-      </div>
-      {ansichtAufgabe.beschreibung && (
-        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Beschreibung</div>
-          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.beschreibung}</div>
-        </div>
-      )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Objekt</div>
-          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.objekt?.strasse} {ansichtAufgabe.objekt?.hausnummer}</div>
-        </div>
-        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Techniker</div>
-          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.techniker?.name || '—'}</div>
-        </div>
-        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Fällig am</div>
-          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{new Date(ansichtAufgabe.faellig_am).toLocaleDateString('de-DE')}</div>
-        </div>
-        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Häufigkeit</div>
-          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.wiederkehrend}</div>
-        </div>
-      </div>
-      <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
-        <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Status</div>
-        <div style={{ fontSize: 13, fontWeight: 500, color: ansichtAufgabe.status === 'erledigt' ? '#2E7D32' : ansichtAufgabe.status === 'in_arbeit' ? '#0C5460' : '#856404' }}>
-          {ansichtAufgabe.status === 'offen' ? 'Offen' : ansichtAufgabe.status === 'in_arbeit' ? 'In Arbeit' : 'Erledigt'}
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+
+        {/* Aufgabe Ansehen */}
+        {ansichtAufgabe && (
+          <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>Aufgabe</div>
+              <button onClick={() => setAnsichtAufgabe(null)} style={{ fontSize: 12, color: '#888780', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Schließen</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+                <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Titel</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{ansichtAufgabe.titel}</div>
+              </div>
+              {ansichtAufgabe.beschreibung && (
+                <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Beschreibung</div>
+                  <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.beschreibung}</div>
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Objekt</div>
+                  <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.objekt?.strasse} {ansichtAufgabe.objekt?.hausnummer}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Techniker</div>
+                  <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.techniker?.name || '—'}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Fällig am</div>
+                  <div style={{ fontSize: 13, color: '#2C2C2A' }}>{new Date(ansichtAufgabe.faellig_am).toLocaleDateString('de-DE')}</div>
+                </div>
+                <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Häufigkeit</div>
+                  <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.wiederkehrend}</div>
+                </div>
+              </div>
+              <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+                <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Status</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: ansichtAufgabe.status === 'erledigt' ? '#2E7D32' : ansichtAufgabe.status === 'in_arbeit' ? '#0C5460' : '#856404' }}>
+                  {ansichtAufgabe.status === 'offen' ? 'Offen' : ansichtAufgabe.status === 'in_arbeit' ? 'In Arbeit' : 'Erledigt'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Monatsfilter */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <input type="month" style={{ ...inputStyle, flex: 1 }} value={filterMonat} onChange={e => setFilterMonat(e.target.value)} />
@@ -382,11 +346,6 @@ export default function Aufgabenplan() {
                         {a.status === 'offen' ? 'Starten' : 'Erledigen'}
                       </button>
                     )}
-                    <button onClick={() => loeschen(a.id)}
-                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>
-                      Löschen
-                    </button>
-                  </div>
                     <button onClick={() => loeschen(a.id)}
                       style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>
                       Löschen
