@@ -25,6 +25,7 @@ import Fahrzeuge from './pages/admin/Fahrzeuge'
 import FahrzeugeHausmeister from './pages/hausmeister/Fahrzeuge'
 import Muellkalender from './pages/admin/Muellkalender'
 import MuellkalenderHausmeister from './pages/hausmeister/Muellkalender'
+import Werkzeuge from './pages/admin/Werkzeuge'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -99,7 +100,8 @@ export default function App() {
           <MeldungDetail />
         </GeschuetzteRoute>
       } />
-
+      <Route path="werkzeuge" element={<Werkzeuge />} />
+      
       <Route path="/passwort-reset" element={<PasswortReset />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
