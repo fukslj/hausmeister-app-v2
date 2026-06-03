@@ -60,30 +60,30 @@ export default function App() {
         </GeschuetzteRoute>
       } />
       <Route path="/hausmeister/aufgabenplan" element={
-          <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+        <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
           <AufgabenplanHausmeister />
-      </GeschuetzteRoute>
+        </GeschuetzteRoute>
       } />
       <Route path="/hausmeister/fahrzeuge" element={
-          <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+        <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
           <FahrzeugeHausmeister />
-      </GeschuetzteRoute>
+        </GeschuetzteRoute>
       } />
       <Route path="/hausmeister/muellkalender" element={
-          <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+        <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
           <MuellkalenderHausmeister />
-      </GeschuetzteRoute>
+        </GeschuetzteRoute>
       } />
       <Route path="/hausmeister/werkzeuge" element={
-  <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
-    <WerkzeugeHausmeister />
-  </GeschuetzteRoute>
-} />
-<Route path="/hausmeister/einkauf" element={
-  <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
-    <EinkaufHausmeister />
-  </GeschuetzteRoute>
-} />
+        <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+          <WerkzeugeHausmeister />
+        </GeschuetzteRoute>
+      } />
+      <Route path="/hausmeister/einkauf" element={
+        <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+          <EinkaufHausmeister />
+        </GeschuetzteRoute>
+      } />
       <Route path="/hausmeister" element={
         <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
           <HausmeisterDashboard />
@@ -104,6 +104,8 @@ export default function App() {
             <Route path="aufgabenplan" element={<Aufgabenplan />} />
             <Route path="fahrzeuge" element={<Fahrzeuge />} />
             <Route path="muellkalender" element={<Muellkalender />} />
+            <Route path="werkzeuge" element={<Werkzeuge />} />
+            <Route path="einkauf" element={<Einkauf />} />
           </Routes>
         </GeschuetzteRoute>
       } />
@@ -113,9 +115,7 @@ export default function App() {
           <MeldungDetail />
         </GeschuetzteRoute>
       } />
-      <Route path="werkzeuge" element={<Werkzeuge />} />
-      <Route path="einkauf" element={<Einkauf />} />
-      
+
       <Route path="/passwort-reset" element={<PasswortReset />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
