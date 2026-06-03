@@ -69,6 +69,7 @@ export default function Aufgabenplan() {
 
     const trennzeichen = zeilen[0].includes(';') ? ';' : ','
     const kopf = zeilen[0].split(trennzeichen).map(s => s.trim().toLowerCase().replace(/"/g, '').replace(/^\uFEFF/, '').replace(/^\u00ef\u00bb\u00bf/, ''))
+    alert(`Kopf: ${JSON.stringify(kopf)}\nErste Zeile: ${zeilen[0]}`)
 
     const inserts = []
     const fehlerZeilen = []
