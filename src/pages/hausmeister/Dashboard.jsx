@@ -116,6 +116,12 @@ export default function Dashboard() {
           <button onClick={() => navigate('/hausmeister/muellkalender')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#E1F5EE', color: '#0F6E56', border: '0.5px solid #9FE1CB', cursor: 'pointer' }}>
              🗑 Müll
           </button>
+          <button onClick={() => navigate('/hausmeister/werkzeuge')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#E1F5EE', color: '#0F6E56', border: '0.5px solid #9FE1CB', cursor: 'pointer' }}>
+            🔨 Werkzeuge
+          </button>
+          <button onClick={() => navigate('/hausmeister/einkauf')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, background: '#E1F5EE', color: '#0F6E56', border: '0.5px solid #9FE1CB', cursor: 'pointer' }}>
+            🛒 Einkauf
+          </button>
         </div>
       </div>
 
