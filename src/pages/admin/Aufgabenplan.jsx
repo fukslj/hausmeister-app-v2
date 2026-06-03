@@ -327,12 +327,21 @@ export default function Aufgabenplan() {
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => setAnsichtAufgabe(a)}
+                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>
+                      Ansehen
+                    </button>
                     {a.status !== 'erledigt' && (
                       <button onClick={() => statusAendern(a.id, a.status === 'offen' ? 'in_arbeit' : 'erledigt')}
                         style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#E8F5E9', color: '#2E7D32', border: '0.5px solid #A5D6A7', cursor: 'pointer' }}>
                         {a.status === 'offen' ? 'Starten' : 'Erledigen'}
                       </button>
                     )}
+                    <button onClick={() => loeschen(a.id)}
+                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>
+                      Löschen
+                    </button>
+                  </div>
                     <button onClick={() => loeschen(a.id)}
                       style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>
                       Löschen
