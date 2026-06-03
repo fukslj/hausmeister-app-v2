@@ -27,6 +27,8 @@ import Muellkalender from './pages/admin/Muellkalender'
 import MuellkalenderHausmeister from './pages/hausmeister/Muellkalender'
 import Werkzeuge from './pages/admin/Werkzeuge'
 import Einkauf from './pages/admin/Einkauf'
+import WerkzeugeHausmeister from './pages/hausmeister/Werkzeuge'
+import EinkaufHausmeister from './pages/hausmeister/Einkauf'
 
 function GeschuetzteRoute({ children, erlaubteTypen }) {
   const { profil, laden } = useAuth()
@@ -72,6 +74,16 @@ export default function App() {
           <MuellkalenderHausmeister />
       </GeschuetzteRoute>
       } />
+      <Route path="/hausmeister/werkzeuge" element={
+  <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+    <WerkzeugeHausmeister />
+  </GeschuetzteRoute>
+} />
+<Route path="/hausmeister/einkauf" element={
+  <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
+    <EinkaufHausmeister />
+  </GeschuetzteRoute>
+} />
       <Route path="/hausmeister" element={
         <GeschuetzteRoute erlaubteTypen={['hausmeister']}>
           <HausmeisterDashboard />
