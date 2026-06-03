@@ -61,30 +61,35 @@ export default function Techniker() {
   }
 
   async function technikerAnlegen(e) {
-    e.preventDefault()
-    if (neu.pin.length !== 4 || !/^\d{4}$/.test(neu.pin)) {
-      setFehler('PIN muss genau 4 Ziffern sein')
-      return
-    }
-    setSpeichern(true)
-    setFehler('')
-
-    const { error } = await supabase.from('techniker').insert({
-      id: neu.user_id,
-      service_id: neu.service_id,
-      name: neu.name,
-      pin_hash: neu.pin,
-      rolle: neu.rolle,
-    })
-
-    if (error) { setFehler('Fehler: ' + error.message); setSpeichern(false); return }
-
-    setNeu({ name: '', pin: '', rolle: 'techniker', user_id: '', service_id: '' })
-    setFormOffen(false)
-    setSchritt(1)
-    setSpeichern(false)
-    ladeTechniker()
+  e.preventDefault()
+  if (neu.pin.length !== 4 || !/^\d{4}$/.test(neu.pin)) {
+    setFehler('PIN muss genau 4 Ziffern sein')
+    return
   }
+  setSpeichern(true)
+  setFehler('')
+
+  const { data, error } = await supabase.functions.invoke('techniker-anlegen', {
+    body: {
+      name: neu.name,
+      pin: neu.pin,
+      service_id: neu.service_id,
+      rolle: neu.rolle,
+    }
+  })
+
+  if (error || data?.error) {
+    setFehler('Fehler: ' + (data?.error || error.message))
+    setSpeichern(false)
+    return
+  }
+
+  setNeu({ name: '', pin: '', rolle: 'techniker', user_id: '', service_id: '' })
+  setFormOffen(false)
+  setSchritt(1)
+  setSpeichern(false)
+  ladeTechniker()
+}
 
   async function technikerSpeichern(id) {
     await supabase.from('techniker').update({
@@ -130,53 +135,33 @@ export default function Techniker() {
 
         {/* Neuer Techniker */}
         {formOffen && (
-          <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20, marginBottom: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 4 }}>Neuer Techniker</div>
-
-            {schritt === 1 && (
-              <div>
-                <div style={{ fontSize: 12, color: '#888780', marginBottom: 16, padding: '10px 12px', background: '#F8F7F2', borderRadius: 8, lineHeight: 1.6 }}>
-                  <strong style={{ color: '#2C2C2A' }}>Schritt 1:</strong> Geh in Supabase → Authentication → Users → <strong style={{ color: '#2C2C2A' }}>Add user</strong>:<br/><br/>
-                  • E-Mail: beliebig (z.B. name@hausmeister.app)<br/>
-                  • Passwort: die gewünschte PIN (4 Ziffern)<br/>
-                  • Auto Confirm User: ✓<br/><br/>
-                  Danach die <strong style={{ color: '#2C2C2A' }}>UUID</strong> des neuen Users kopieren.
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setFormOffen(false)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
-                  <button onClick={() => setSchritt(2)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>Weiter →</button>
-                </div>
-              </div>
-            )}
-
-            {schritt === 2 && (
-              <form onSubmit={technikerAnlegen}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, marginTop: 12 }}>
-                  <input style={inputStyle} placeholder="Name des Technikers" value={neu.name} onChange={e => setNeu({...neu, name: e.target.value})} required />
-                  <input style={inputStyle} placeholder="PIN (4 Ziffern)" maxLength={4} value={neu.pin} onChange={e => setNeu({...neu, pin: e.target.value.replace(/\D/g, '')})} required />
-                  <input style={inputStyle} placeholder="UUID aus Supabase einfügen" value={neu.user_id} onChange={e => setNeu({...neu, user_id: e.target.value.trim()})} required />
-                  <select style={inputStyle} value={neu.service_id} onChange={e => setNeu({...neu, service_id: e.target.value})} required>
-                    <option value="">Firma auswählen…</option>
-                    {services.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                  <select style={inputStyle} value={neu.rolle} onChange={e => setNeu({...neu, rolle: e.target.value})}>
-                    <option value="techniker">Techniker</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                {fehler && <div style={{ fontSize: 12, color: '#C0392B', padding: '8px 12px', background: '#FDECEB', borderRadius: 8, marginBottom: 12 }}>{fehler}</div>}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={() => setSchritt(1)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>← Zurück</button>
-                  <button type="submit" disabled={speichern} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>
-                    {speichern ? 'Wird gespeichert…' : 'Speichern'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
+  <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+    <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 16 }}>Neuer Techniker</div>
+    <form onSubmit={technikerAnlegen}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        <input style={inputStyle} placeholder="Name des Technikers" value={neu.name} onChange={e => setNeu({...neu, name: e.target.value})} required />
+        <input style={inputStyle} placeholder="PIN (4 Ziffern)" maxLength={4} value={neu.pin} onChange={e => setNeu({...neu, pin: e.target.value.replace(/\D/g, '')})} required />
+        <select style={inputStyle} value={neu.service_id} onChange={e => setNeu({...neu, service_id: e.target.value})} required>
+          <option value="">Firma auswählen…</option>
+          {services.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+        <select style={inputStyle} value={neu.rolle} onChange={e => setNeu({...neu, rolle: e.target.value})}>
+          <option value="techniker">Techniker</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      {fehler && <div style={{ fontSize: 12, color: '#C0392B', padding: '8px 12px', background: '#FDECEB', borderRadius: 8, marginBottom: 12 }}>{fehler}</div>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button type="button" onClick={() => setFormOffen(false)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+        <button type="submit" disabled={speichern} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>
+          {speichern ? 'Wird angelegt…' : 'Speichern'}
+        </button>
+      </div>
+    </form>
+  </div>
+)}
 
         {/* Objektzuweisung */}
         {objektZuweisungId && (
