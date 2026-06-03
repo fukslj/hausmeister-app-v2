@@ -21,6 +21,7 @@ export default function Aufgabenplan() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
   const csvInputRef = useRef(null)
+  const [ansichtAufgabe, setAnsichtAufgabe] = useState(null)
 
   useEffect(() => { ladeDaten() }, [])
 
@@ -294,7 +295,51 @@ export default function Aufgabenplan() {
             </div>
           </form>
         )}
-
+        {/* Aufgabe Ansehen Modal */}
+{ansichtAufgabe && (
+  <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>Aufgabe</div>
+      <button onClick={() => setAnsichtAufgabe(null)} style={{ fontSize: 12, color: '#888780', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Schließen</button>
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+        <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Titel</div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{ansichtAufgabe.titel}</div>
+      </div>
+      {ansichtAufgabe.beschreibung && (
+        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Beschreibung</div>
+          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.beschreibung}</div>
+        </div>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Objekt</div>
+          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.objekt?.strasse} {ansichtAufgabe.objekt?.hausnummer}</div>
+        </div>
+        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Techniker</div>
+          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.techniker?.name || '—'}</div>
+        </div>
+        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Fällig am</div>
+          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{new Date(ansichtAufgabe.faellig_am).toLocaleDateString('de-DE')}</div>
+        </div>
+        <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Häufigkeit</div>
+          <div style={{ fontSize: 13, color: '#2C2C2A' }}>{ansichtAufgabe.wiederkehrend}</div>
+        </div>
+      </div>
+      <div style={{ padding: '10px 14px', background: '#F8F7F2', borderRadius: 8 }}>
+        <div style={{ fontSize: 11, color: '#888780', marginBottom: 3 }}>Status</div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: ansichtAufgabe.status === 'erledigt' ? '#2E7D32' : ansichtAufgabe.status === 'in_arbeit' ? '#0C5460' : '#856404' }}>
+          {ansichtAufgabe.status === 'offen' ? 'Offen' : ansichtAufgabe.status === 'in_arbeit' ? 'In Arbeit' : 'Erledigt'}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         {/* Monatsfilter */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <input type="month" style={{ ...inputStyle, flex: 1 }} value={filterMonat} onChange={e => setFilterMonat(e.target.value)} />
