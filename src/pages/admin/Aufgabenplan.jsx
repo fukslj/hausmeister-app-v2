@@ -58,8 +58,23 @@ export default function Aufgabenplan() {
   }
 
   async function csvImport(e) {
-    const file = e.target.files[0]
-    if (!file) return
+  const file = e.target.files[0]
+  if (!file) return
+
+  // Versuche zuerst UTF-8, dann ISO-8859-1
+  let text = await file.text()
+  
+  // Prüfe ob Umlaute kaputt sind (ISO-8859-1 Indikator)
+  if (text.includes('Ã') || text.includes('ï»¿')) {
+    const buffer = await file.arrayBuffer()
+    const decoder = new TextDecoder('iso-8859-1')
+    text = decoder.decode(buffer)
+  }
+  
+  // BOM entfernen
+  text = text.replace(/^\uFEFF/, '')
+  
+  const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
 
     // UTF-8 lesen, BOM entfernen
     const text = await file.text()
