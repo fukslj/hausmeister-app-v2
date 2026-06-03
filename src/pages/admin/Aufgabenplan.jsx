@@ -61,15 +61,14 @@ export default function Aufgabenplan() {
     const file = e.target.files[0]
     if (!file) return
 
-    const buffer = await file.arrayBuffer()
-    const decoder = new TextDecoder('iso-8859-1')
-    const text = decoder.decode(buffer)
-    const zeilen = text.replace(/\r/g, '').split('\n').filter(z => z.trim())
+    // UTF-8 lesen, BOM entfernen
+    const text = await file.text()
+    const cleaned = text.replace(/^\uFEFF/, '')
+    const zeilen = cleaned.replace(/\r/g, '').split('\n').filter(z => z.trim())
     if (zeilen.length < 2) { alert('CSV hat zu wenig Zeilen'); return }
 
     const trennzeichen = zeilen[0].includes(';') ? ';' : ','
-    const kopf = zeilen[0].split(trennzeichen).map(s => s.trim().toLowerCase().replace(/"/g, '').replace(/^\uFEFF/, '').replace(/^\u00ef\u00bb\u00bf/, ''))
-    alert(`Kopf: ${JSON.stringify(kopf)}\nErste Zeile: ${zeilen[0]}`)
+    const kopf = zeilen[0].split(trennzeichen).map(s => s.trim().toLowerCase().replace(/"/g, ''))
 
     const inserts = []
     const fehlerZeilen = []
@@ -101,12 +100,18 @@ export default function Aufgabenplan() {
 
       // Häufigkeit mappen
       const haeufigkeitMap = {
-        'einmalig': 'einmalig', 'monatlich': 'monatlich',
-        'quartalsweise': 'quartalsweise', 'jährlich': 'jaehrlich',
-        'jaehrlich': 'jaehrlich', 'wöchentlich': 'woechentlich',
-        'woechentlich': 'woechentlich', 'täglich': 'taeglich', 'taeglich': 'taeglich'
+        'einmalig': 'einmalig',
+        'monatlich': 'monatlich',
+        'quartalsweise': 'quartalsweise',
+        'jährlich': 'jaehrlich',
+        'jaehrlich': 'jaehrlich',
+        'wöchentlich': 'woechentlich',
+        'woechentlich': 'woechentlich',
+        'täglich': 'taeglich',
+        'taeglich': 'taeglich',
       }
-      const haeufigkeit = haeufigkeitMap[row['häufigkeit']?.toLowerCase() || row['haeufigkeit']?.toLowerCase() || 'einmalig'] || 'einmalig'
+      const haeufigkeitRaw = row['häufigkeit'] || row['haeufigkeit'] || row['haufigkeit'] || 'einmalig'
+      const haeufigkeit = haeufigkeitMap[haeufigkeitRaw.toLowerCase()] || 'einmalig'
 
       inserts.push({
         objekt_id: objekt.id,
@@ -135,12 +140,11 @@ export default function Aufgabenplan() {
   }
 
   function csvExport() {
-    const bom = '\uFEFF'
     const kopf = 'Objekt;Techniker;Titel;Datum;Häufigkeit'
     const zeilen = aufgaben.map(a =>
       `${a.objekt?.strasse} ${a.objekt?.hausnummer};${a.techniker?.name || ''};${a.titel};${new Date(a.faellig_am).toLocaleDateString('de-DE')};${a.wiederkehrend}`
     )
-    const csv = bom + [kopf, ...zeilen].join('\n')
+    const csv = '\uFEFF' + [kopf, ...zeilen].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -151,9 +155,13 @@ export default function Aufgabenplan() {
   }
 
   function beispielExport() {
-    const bom = '\uFEFF'
-    const inhalt = `Objekt;Techniker;Titel;Datum;Häufigkeit\nErnst-Putz-Str. 43;S. Samchenko;Heizung prüfen;15.01.2026;monatlich\nErnst-Putz-Str. 43;;Dach kontrollieren;20.01.2026;jährlich\nErnst-Putz-Str. 43;S. Samchenko;Treppe reinigen;05.01.2026;wöchentlich`
-    const blob = new Blob([bom + inhalt], { type: 'text/csv;charset=utf-8;' })
+    const beispiel = [
+      'Objekt;Techniker;Titel;Datum;Häufigkeit',
+      'Ernst-Putz-Str. 43;S. Samchenko;Heizung prüfen;15.01.2026;monatlich',
+      'Ernst-Putz-Str. 43;;Dach kontrollieren;20.01.2026;jährlich',
+      'Ernst-Putz-Str. 43;S. Samchenko;Treppe reinigen;05.01.2026;wöchentlich',
+    ].join('\n')
+    const blob = new Blob(['\uFEFF' + beispiel], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
