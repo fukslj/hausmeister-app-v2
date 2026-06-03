@@ -9,10 +9,9 @@ export default function Techniker() {
   const [objekte, setObjekte] = useState([])
   const [laden, setLaden] = useState(true)
   const [formOffen, setFormOffen] = useState(false)
-  const [neu, setNeu] = useState({ name: '', pin: '', rolle: 'techniker', user_id: '', service_id: '' })
+  const [neu, setNeu] = useState({ name: '', pin: '', rolle: 'techniker', service_id: '' })
   const [speichern, setSpeichern] = useState(false)
   const [fehler, setFehler] = useState('')
-  const [schritt, setSchritt] = useState(1)
   const [bearbeitenId, setBearbeitenId] = useState(null)
   const [bearbeitenWert, setBearbeitenWert] = useState({})
   const [loeschenId, setLoeschenId] = useState(null)
@@ -61,66 +60,43 @@ export default function Techniker() {
   }
 
   async function technikerAnlegen(e) {
-  e.preventDefault()
-  if (neu.pin.length !== 4 || !/^\d{4}$/.test(neu.pin)) {
-    setFehler('PIN muss genau 4 Ziffern sein')
-    return
-  }
-  setSpeichern(true)
-  setFehler('')
-
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/techniker-anlegen`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        name: neu.name,
-        pin: neu.pin,
-        service_id: neu.service_id,
-        rolle: neu.rolle,
-      })
-    })
-    const data = await response.json()
-    if (!response.ok || data?.error) {
-      setFehler('Fehler: ' + (data?.error || 'Unbekannter Fehler'))
-      setSpeichern(false)
+    e.preventDefault()
+    if (neu.pin.length !== 4 || !/^\d{4}$/.test(neu.pin)) {
+      setFehler('PIN muss genau 4 Ziffern sein')
       return
     }
-    setNeu({ name: '', pin: '', rolle: 'techniker', user_id: '', service_id: '' })
-    setFormOffen(false)
-    setSchritt(1)
-    setSpeichern(false)
-    ladeTechniker()
-  } catch (err) {
-    setFehler('Fehler: ' + err.message)
-    setSpeichern(false)
+    setSpeichern(true)
+    setFehler('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/techniker-anlegen`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          name: neu.name,
+          pin: neu.pin,
+          service_id: neu.service_id,
+          rolle: neu.rolle,
+        })
+      })
+      const result = await response.json()
+      if (!response.ok || result?.error) {
+        setFehler('Fehler: ' + (result?.error || 'Unbekannter Fehler'))
+        setSpeichern(false)
+        return
+      }
+      setNeu({ name: '', pin: '', rolle: 'techniker', service_id: '' })
+      setFormOffen(false)
+      setSpeichern(false)
+      ladeTechniker()
+    } catch (err) {
+      setFehler('Fehler: ' + err.message)
+      setSpeichern(false)
+    }
   }
-}
-
-const data = await response.json()
-
-if (!response.ok || data?.error) {
-  setFehler('Fehler: ' + (data?.error || 'Unbekannter Fehler'))
-  setSpeichern(false)
-  return
-}
-
-  if (error || data?.error) {
-    setFehler('Fehler: ' + (data?.error || error.message))
-    setSpeichern(false)
-    return
-  }
-
-  setNeu({ name: '', pin: '', rolle: 'techniker', user_id: '', service_id: '' })
-  setFormOffen(false)
-  setSchritt(1)
-  setSpeichern(false)
-  ladeTechniker()
-}
 
   async function technikerSpeichern(id) {
     await supabase.from('techniker').update({
@@ -157,7 +133,7 @@ if (!response.ok || data?.error) {
           <span onClick={() => navigate('/admin')} style={{ fontSize: 12, color: '#888780', cursor: 'pointer' }}>← Zurück</span>
           <span style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>Techniker</span>
         </div>
-        <button onClick={() => { setFormOffen(true); setSchritt(1) }} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', cursor: 'pointer' }}>
+        <button onClick={() => { setFormOffen(true); setFehler('') }} style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', cursor: 'pointer' }}>
           + Neu
         </button>
       </div>
@@ -166,33 +142,31 @@ if (!response.ok || data?.error) {
 
         {/* Neuer Techniker */}
         {formOffen && (
-  <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20, marginBottom: 20 }}>
-    <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 16 }}>Neuer Techniker</div>
-    <form onSubmit={technikerAnlegen}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-        <input style={inputStyle} placeholder="Name des Technikers" value={neu.name} onChange={e => setNeu({...neu, name: e.target.value})} required />
-        <input style={inputStyle} placeholder="PIN (4 Ziffern)" maxLength={4} value={neu.pin} onChange={e => setNeu({...neu, pin: e.target.value.replace(/\D/g, '')})} required />
-        <select style={inputStyle} value={neu.service_id} onChange={e => setNeu({...neu, service_id: e.target.value})} required>
-          <option value="">Firma auswählen…</option>
-          {services.map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-        <select style={inputStyle} value={neu.rolle} onChange={e => setNeu({...neu, rolle: e.target.value})}>
-          <option value="techniker">Techniker</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      {fehler && <div style={{ fontSize: 12, color: '#C0392B', padding: '8px 12px', background: '#FDECEB', borderRadius: 8, marginBottom: 12 }}>{fehler}</div>}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button type="button" onClick={() => setFormOffen(false)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
-        <button type="submit" disabled={speichern} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>
-          {speichern ? 'Wird angelegt…' : 'Speichern'}
-        </button>
-      </div>
-    </form>
-  </div>
-)}
+          <div style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A', marginBottom: 16 }}>Neuer Techniker</div>
+            <form onSubmit={technikerAnlegen}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                <input style={inputStyle} placeholder="Name des Technikers" value={neu.name} onChange={e => setNeu({...neu, name: e.target.value})} required />
+                <input style={inputStyle} placeholder="PIN (4 Ziffern)" maxLength={4} value={neu.pin} onChange={e => setNeu({...neu, pin: e.target.value.replace(/\D/g, '')})} required />
+                <select style={inputStyle} value={neu.service_id} onChange={e => setNeu({...neu, service_id: e.target.value})} required>
+                  <option value="">Firma auswählen…</option>
+                  {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <select style={inputStyle} value={neu.rolle} onChange={e => setNeu({...neu, rolle: e.target.value})}>
+                  <option value="techniker">Techniker</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              {fehler && <div style={{ fontSize: 12, color: '#C0392B', padding: '8px 12px', background: '#FDECEB', borderRadius: 8, marginBottom: 12 }}>{fehler}</div>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" onClick={() => setFormOffen(false)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+                <button type="submit" disabled={speichern} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>
+                  {speichern ? 'Wird angelegt…' : 'Speichern'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* Objektzuweisung */}
         {objektZuweisungId && (
@@ -229,16 +203,13 @@ if (!response.ok || data?.error) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {techniker.map(t => (
               <div key={t.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '16px 20px' }}>
-
                 {bearbeitenId === t.id ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <input style={inputStyle} value={bearbeitenWert.name} onChange={e => setBearbeitenWert({...bearbeitenWert, name: e.target.value})} placeholder="Name" />
                     <input style={inputStyle} value={bearbeitenWert.pin_hash} onChange={e => setBearbeitenWert({...bearbeitenWert, pin_hash: e.target.value.replace(/\D/g, '').slice(0, 4)})} placeholder="PIN (4 Ziffern)" maxLength={4} />
                     <select style={inputStyle} value={bearbeitenWert.service_id} onChange={e => setBearbeitenWert({...bearbeitenWert, service_id: e.target.value})}>
                       <option value="">Firma auswählen…</option>
-                      {services.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
+                      {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                     <select style={inputStyle} value={bearbeitenWert.rolle} onChange={e => setBearbeitenWert({...bearbeitenWert, rolle: e.target.value})}>
                       <option value="techniker">Techniker</option>
