@@ -186,29 +186,43 @@ export default function Einkauf() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {gefiltert.map(e => {
-              const badge = kategorieBadge(e.kategorie)
-              return (
-                <div key={e.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{e.artikel}</div>
-                      <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>{e.objekt?.strasse} {e.objekt?.hausnummer}</div>
-                      <div style={{ fontSize: 11, color: '#888780', marginTop: 2 }}>
-                        {e.menge} {e.einheit} · {new Date(e.gekauft_am).toLocaleDateString('de-DE')} · {e.techniker?.name || 'Admin'}
-                      </div>
-                      {e.notiz && <div style={{ fontSize: 11, color: '#5F5E5A', marginTop: 4 }}>{e.notiz}</div>}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0, marginLeft: 8 }}>
-                      {e.preis && <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>€ {Number(e.preis).toFixed(2)}</div>}
-                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: badge.bg, color: badge.color }}>{e.kategorie}</span>
-                    </div>
-                  </div>
-                  <button onClick={() => loeschen(e.id)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>
-                    Löschen
-                  </button>
-                </div>
-              )
-            })}
+  const badge = kategorieBadge(e.kategorie)
+  return (
+    <div key={e.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '14px 16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{e.artikel}</div>
+          <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>{e.objekt?.strasse} {e.objekt?.hausnummer}</div>
+          <div style={{ fontSize: 11, color: '#888780', marginTop: 2 }}>
+            {e.menge} {e.einheit} · {new Date(e.gekauft_am).toLocaleDateString('de-DE')} · {e.techniker?.name || 'Admin'}
+          </div>
+          {e.notiz && <div style={{ fontSize: 11, color: '#5F5E5A', marginTop: 4 }}>{e.notiz}</div>}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0, marginLeft: 8 }}>
+          {e.preis && <div style={{ fontSize: 14, fontWeight: 500, color: '#2C2C2A' }}>€ {Number(e.preis).toFixed(2)}</div>}
+          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: badge.bg, color: badge.color }}>{e.kategorie}</span>
+        </div>
+      </div>
+
+      {/* Foto */}
+      {e.foto_url && (
+        <div style={{ marginBottom: 8 }}>
+          <img src={e.foto_url} alt="Kassenbon"
+            onClick={() => window.open(e.foto_url, '_blank')}
+            style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', marginBottom: 6 }} />
+          <a href={e.foto_url} download target="_blank" rel="noreferrer"
+            style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>
+            📥 Bild herunterladen
+          </a>
+        </div>
+      )}
+
+      <button onClick={() => loeschen(e.id)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>
+        Löschen
+      </button>
+    </div>
+  )
+})}
           </div>
         )}
       </div>
