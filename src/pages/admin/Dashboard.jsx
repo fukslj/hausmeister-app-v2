@@ -15,6 +15,7 @@ export default function Dashboard() {
   { label: 'Aufgabenplan', sub: 'Aufgaben pro Objekt verwalten', icon: '📅', path: '/admin/aufgabenplan' },
   { label: 'Fahrzeuge', sub: 'Fuhrpark und Buchungen', icon: '🚐', path: '/admin/fahrzeuge' },
   { label: 'Müllkalender', sub: 'Abholtermine und Meldungen', icon: '🗑', path: '/admin/muellkalender' },
+  { label: 'Werkzeuge', sub: 'Gartenwerkzeuge und Lagerorte', icon: '🔨', path: '/admin/werkzeuge' },
 ]
 
   return (
