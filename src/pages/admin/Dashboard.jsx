@@ -16,6 +16,7 @@ export default function Dashboard() {
   { label: 'Fahrzeuge', sub: 'Fuhrpark und Buchungen', icon: '🚐', path: '/admin/fahrzeuge' },
   { label: 'Müllkalender', sub: 'Abholtermine und Meldungen', icon: '🗑', path: '/admin/muellkalender' },
   { label: 'Werkzeuge', sub: 'Gartenwerkzeuge und Lagerorte', icon: '🔨', path: '/admin/werkzeuge' },
+  { label: 'Einkäufe', sub: 'Materialien und Kosten pro Objekt', icon: '🛒', path: '/admin/einkauf' },
 ]
 
   return (
