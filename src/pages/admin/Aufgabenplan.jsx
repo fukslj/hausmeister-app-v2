@@ -22,6 +22,8 @@ export default function Aufgabenplan() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
   const [filterObjekt, setFilterObjekt] = useState('')
+  const [bearbeitenId, setBearbeitenId] = useState(null)
+  const [bearbeitenWert, setBearbeitenWert] = useState({})
   const csvInputRef = useRef(null)
 
   useEffect(() => { ladeDaten() }, [])
@@ -169,7 +171,20 @@ export default function Aufgabenplan() {
     await supabase.from('aufgabenplan').delete().eq('id', id)
     ladeDaten()
   }
-
+  
+  async function aufgabeSpeichern(id) {
+  await supabase.from('aufgabenplan').update({
+    titel: bearbeitenWert.titel,
+    beschreibung: bearbeitenWert.beschreibung || null,
+    objekt_id: bearbeitenWert.objekt_id,
+    techniker_id: bearbeitenWert.techniker_id || null,
+    faellig_am: bearbeitenWert.faellig_am,
+    wiederkehrend: bearbeitenWert.wiederkehrend,
+  }).eq('id', id)
+  setBearbeitenId(null)
+  ladeDaten()
+}
+  
   function gefilterteAufgaben() {
     return aufgaben.filter(a => {
       const monatMatch = a.faellig_am?.startsWith(filterMonat)
@@ -329,42 +344,77 @@ export default function Aufgabenplan() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {gefiltert.map(a => {
-              const badge = statusBadge(a.status)
-              const istUeberfaellig = a.status !== 'erledigt' && new Date(a.faellig_am) < new Date()
-              return (
-                <div key={a.id} style={{ background: 'white', border: `0.5px solid ${istUeberfaellig ? '#F5C6C2' : '#D3D1C7'}`, borderRadius: 12, padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: istUeberfaellig ? '#C0392B' : '#2C2C2A' }}>{a.titel}</div>
-                      <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>{a.objekt?.strasse} {a.objekt?.hausnummer}</div>
-                      {a.beschreibung && <div style={{ fontSize: 12, color: '#5F5E5A', marginTop: 4 }}>{a.beschreibung}</div>}
-                      <div style={{ fontSize: 11, color: '#888780', marginTop: 4 }}>
-                        Fällig: {new Date(a.faellig_am).toLocaleDateString('de-DE')} · {a.techniker?.name || 'Kein Techniker'} · {a.wiederkehrend}
-                      </div>
-                    </div>
-                    <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 20, background: badge.bg, color: badge.color, flexShrink: 0, marginLeft: 8 }}>
-                      {badge.text}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => setAnsichtAufgabe(a)}
-                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>
-                      Ansehen
-                    </button>
-                    {a.status !== 'erledigt' && (
-                      <button onClick={() => statusAendern(a.id, a.status === 'offen' ? 'in_arbeit' : 'erledigt')}
-                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#E8F5E9', color: '#2E7D32', border: '0.5px solid #A5D6A7', cursor: 'pointer' }}>
-                        {a.status === 'offen' ? 'Starten' : 'Erledigen'}
-                      </button>
-                    )}
-                    <button onClick={() => loeschen(a.id)}
-                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>
-                      Löschen
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+  const badge = statusBadge(a.status)
+  const istUeberfaellig = a.status !== 'erledigt' && new Date(a.faellig_am) < new Date()
+
+  if (bearbeitenId === a.id) {
+    return (
+      <div key={a.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '16px 20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <input style={inputStyle} value={bearbeitenWert.titel} onChange={e => setBearbeitenWert({...bearbeitenWert, titel: e.target.value})} placeholder="Titel" />
+          <textarea style={{ ...inputStyle, height: 60, padding: '10px 12px', resize: 'none' }} value={bearbeitenWert.beschreibung || ''} onChange={e => setBearbeitenWert({...bearbeitenWert, beschreibung: e.target.value})} placeholder="Beschreibung" />
+          <select style={inputStyle} value={bearbeitenWert.objekt_id} onChange={e => setBearbeitenWert({...bearbeitenWert, objekt_id: e.target.value})}>
+            <option value="">Objekt auswählen…</option>
+            {objekte.map(o => <option key={o.id} value={o.id}>{o.strasse} {o.hausnummer}</option>)}
+          </select>
+          <select style={inputStyle} value={bearbeitenWert.techniker_id || ''} onChange={e => setBearbeitenWert({...bearbeitenWert, techniker_id: e.target.value})}>
+            <option value="">Techniker auswählen (optional)</option>
+            {techniker.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <input type="date" style={inputStyle} value={bearbeitenWert.faellig_am} onChange={e => setBearbeitenWert({...bearbeitenWert, faellig_am: e.target.value})} />
+          <select style={inputStyle} value={bearbeitenWert.wiederkehrend} onChange={e => setBearbeitenWert({...bearbeitenWert, wiederkehrend: e.target.value})}>
+            <option value="einmalig">Einmalig</option>
+            <option value="monatlich">Monatlich</option>
+            <option value="quartalsweise">Quartalsweise</option>
+            <option value="jaehrlich">Jährlich</option>
+          </select>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setBearbeitenId(null)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+            <button onClick={() => aufgabeSpeichern(a.id)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>Speichern</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div key={a.id} style={{ background: 'white', border: `0.5px solid ${istUeberfaellig ? '#F5C6C2' : '#D3D1C7'}`, borderRadius: 12, padding: '16px 20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: istUeberfaellig ? '#C0392B' : '#2C2C2A' }}>{a.titel}</div>
+          <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>{a.objekt?.strasse} {a.objekt?.hausnummer}</div>
+          {a.beschreibung && <div style={{ fontSize: 12, color: '#5F5E5A', marginTop: 4 }}>{a.beschreibung}</div>}
+          <div style={{ fontSize: 11, color: '#888780', marginTop: 4 }}>
+            Fällig: {new Date(a.faellig_am).toLocaleDateString('de-DE')} · {a.techniker?.name || 'Kein Techniker'} · {a.wiederkehrend}
+          </div>
+        </div>
+        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 20, background: badge.bg, color: badge.color, flexShrink: 0, marginLeft: 8 }}>
+          {badge.text}
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <button onClick={() => setAnsichtAufgabe(a)}
+          style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#F1EFE8', color: '#444441', border: '0.5px solid #D3D1C7', cursor: 'pointer' }}>
+          Ansehen
+        </button>
+        <button onClick={() => { setBearbeitenId(a.id); setBearbeitenWert({ titel: a.titel, beschreibung: a.beschreibung, objekt_id: a.objekt_id, techniker_id: a.techniker_id, faellig_am: a.faellig_am, wiederkehrend: a.wiederkehrend }) }}
+          style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#EEEDFE', color: '#534AB7', border: '0.5px solid #AFA9EC', cursor: 'pointer' }}>
+          Bearbeiten
+        </button>
+        {a.status !== 'erledigt' && (
+          <button onClick={() => statusAendern(a.id, a.status === 'offen' ? 'in_arbeit' : 'erledigt')}
+            style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#E8F5E9', color: '#2E7D32', border: '0.5px solid #A5D6A7', cursor: 'pointer' }}>
+            {a.status === 'offen' ? 'Starten' : 'Erledigen'}
+          </button>
+        )}
+        <button onClick={() => loeschen(a.id)}
+          style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>
+          Löschen
+        </button>
+      </div>
+    </div>
+  )
+})}
           </div>
         )}
       </div>
