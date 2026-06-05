@@ -21,6 +21,7 @@ export default function Aufgabenplan() {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
+  const [filterObjekt, setFilterObjekt] = useState('')
   const csvInputRef = useRef(null)
 
   useEffect(() => { ladeDaten() }, [])
@@ -170,7 +171,11 @@ export default function Aufgabenplan() {
   }
 
   function gefilterteAufgaben() {
-    return aufgaben.filter(a => a.faellig_am?.startsWith(filterMonat))
+    return aufgaben.filter(a => {
+      const monatMatch = a.faellig_am?.startsWith(filterMonat)
+      const objektMatch = !filterObjekt || a.objekt_id === filterObjekt
+      return monatMatch && objektMatch
+    })
   }
 
   function statusBadge(status) {
@@ -304,17 +309,23 @@ export default function Aufgabenplan() {
           </div>
         )}
 
-        {/* Monatsfilter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input type="month" style={{ ...inputStyle, flex: 1 }} value={filterMonat} onChange={e => setFilterMonat(e.target.value)} />
-          <span style={{ fontSize: 13, color: '#888780' }}>{gefiltert.length} Aufgaben</span>
+        {/* Filter */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <input type="month" style={{ ...inputStyle, flex: 1 }} value={filterMonat} onChange={e => setFilterMonat(e.target.value)} />
+            <span style={{ fontSize: 13, color: '#888780', whiteSpace: 'nowrap' }}>{gefiltert.length} Aufgaben</span>
+          </div>
+          <select style={inputStyle} value={filterObjekt} onChange={e => setFilterObjekt(e.target.value)}>
+            <option value="">Alle Objekte</option>
+            {objekte.map(o => <option key={o.id} value={o.id}>{o.strasse} {o.hausnummer}</option>)}
+          </select>
         </div>
 
         {/* Liste */}
         {laden ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Laden…</div>
         ) : gefiltert.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Keine Aufgaben für diesen Monat</div>
+          <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Keine Aufgaben gefunden</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {gefiltert.map(a => {
