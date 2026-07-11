@@ -8,6 +8,9 @@ export default function StempeluhrAdmin() {
   const [techniker, setTechniker] = useState([])
   const [laden, setLaden] = useState(true)
   const [filterTechniker, setFilterTechniker] = useState('')
+  const [bearbeitenId, setBearbeitenId] = useState(null)
+  const [bearbeitenWert, setBearbeitenWert] = useState({})
+  const [loeschenId, setLoeschenId] = useState(null)
   const [filterVon, setFilterVon] = useState(() => {
     const d = new Date()
     d.setDate(1)
@@ -50,6 +53,46 @@ export default function StempeluhrAdmin() {
     const { data } = await query
     setEintraege(data || [])
     setLaden(false)
+  }
+
+  // Wandelt einen ISO-Zeitstempel in einen Wert für datetime-local (lokale Zeit)
+  function toLocalInput(iso) {
+    const d = new Date(iso)
+    const off = d.getTimezoneOffset()
+    const local = new Date(d.getTime() - off * 60000)
+    return local.toISOString().slice(0, 16)
+  }
+
+  function starteBearbeiten(e) {
+    setBearbeitenId(e.id)
+    setBearbeitenWert({
+      eingestempelt_am: toLocalInput(e.eingestempelt_am),
+      ausgestempelt_am: toLocalInput(e.ausgestempelt_am),
+      notiz: e.notiz || '',
+    })
+    setLoeschenId(null)
+  }
+
+  async function speichern(id) {
+    const ein = new Date(bearbeitenWert.eingestempelt_am)
+    const aus = new Date(bearbeitenWert.ausgestempelt_am)
+    if (aus <= ein) {
+      alert('Die Ausstempelzeit muss nach der Einstempelzeit liegen.')
+      return
+    }
+    await supabase.from('stempeluhr').update({
+      eingestempelt_am: ein.toISOString(),
+      ausgestempelt_am: aus.toISOString(),
+      notiz: bearbeitenWert.notiz || null,
+    }).eq('id', id)
+    setBearbeitenId(null)
+    filtern()
+  }
+
+  async function loeschen(id) {
+    await supabase.from('stempeluhr').delete().eq('id', id)
+    setLoeschenId(null)
+    filtern()
   }
 
   function formatDauer(von, bis) {
@@ -116,24 +159,70 @@ export default function StempeluhrAdmin() {
         ) : eintraege.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#888780', fontSize: 13 }}>Keine Einträge gefunden</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, border: '0.5px solid #D3D1C7', borderRadius: 12, overflow: 'hidden' }}>
-            {eintraege.map((e, i) => (
-              <div key={e.id} style={{ background: 'white', padding: '12px 16px', borderBottom: i < eintraege.length - 1 ? '0.5px solid #F1EFE8' : 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{e.techniker?.name}</div>
-                    <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>{e.stempeluhr_aufgabe?.bezeichnung}</div>
-                    <div style={{ fontSize: 11, color: '#B4B2A9', marginTop: 2 }}>
-                      {new Date(e.eingestempelt_am).toLocaleDateString('de-DE')} · {new Date(e.eingestempelt_am).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – {new Date(e.ausgestempelt_am).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {eintraege.map(e => {
+              if (bearbeitenId === e.id) {
+                return (
+                  <div key={e.id} style={{ background: 'white', border: '0.5px solid #AFA9EC', borderRadius: 12, padding: '16px 18px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A', marginBottom: 4 }}>{e.techniker?.name}</div>
+                    <div style={{ fontSize: 12, color: '#888780', marginBottom: 12 }}>{e.stempeluhr_aufgabe?.bezeichnung}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Eingestempelt</div>
+                        <input type="datetime-local" style={{ ...inputStyle, width: '100%' }} value={bearbeitenWert.eingestempelt_am} onChange={ev => setBearbeitenWert({...bearbeitenWert, eingestempelt_am: ev.target.value})} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Ausgestempelt</div>
+                        <input type="datetime-local" style={{ ...inputStyle, width: '100%' }} value={bearbeitenWert.ausgestempelt_am} onChange={ev => setBearbeitenWert({...bearbeitenWert, ausgestempelt_am: ev.target.value})} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Notiz</div>
+                        <input style={{ ...inputStyle, width: '100%' }} value={bearbeitenWert.notiz} onChange={ev => setBearbeitenWert({...bearbeitenWert, notiz: ev.target.value})} placeholder="Notiz (optional)" />
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                        <button onClick={() => setBearbeitenId(null)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+                        <button onClick={() => speichern(e.id)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#444441', color: '#F1EFE8', border: 'none', fontSize: 13, cursor: 'pointer' }}>Speichern</button>
+                      </div>
                     </div>
-                    {e.notiz && <div style={{ fontSize: 11, color: '#888780', marginTop: 2 }}>{e.notiz}</div>}
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: '#444441', background: '#F1EFE8', padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>
-                    {formatDauer(e.eingestempelt_am, e.ausgestempelt_am)}
-                  </span>
+                )
+              }
+
+              if (loeschenId === e.id) {
+                return (
+                  <div key={e.id} style={{ background: 'white', border: '0.5px solid #F5C6C2', borderRadius: 12, padding: '16px 18px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#C0392B', marginBottom: 6 }}>Eintrag wirklich löschen?</div>
+                    <div style={{ fontSize: 12, color: '#888780', marginBottom: 12 }}>{e.techniker?.name} · {new Date(e.eingestempelt_am).toLocaleDateString('de-DE')} · {formatDauer(e.eingestempelt_am, e.ausgestempelt_am)}</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setLoeschenId(null)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#F1EFE8', color: '#888780', border: '0.5px solid #D3D1C7', fontSize: 13, cursor: 'pointer' }}>Abbrechen</button>
+                      <button onClick={() => loeschen(e.id)} style={{ flex: 1, height: 36, borderRadius: 8, background: '#C0392B', color: 'white', border: 'none', fontSize: 13, cursor: 'pointer' }}>Ja, löschen</button>
+                    </div>
+                  </div>
+                )
+              }
+
+              return (
+                <div key={e.id} style={{ background: 'white', border: '0.5px solid #D3D1C7', borderRadius: 12, padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2C2A' }}>{e.techniker?.name}</div>
+                      <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>{e.stempeluhr_aufgabe?.bezeichnung}</div>
+                      <div style={{ fontSize: 11, color: '#B4B2A9', marginTop: 2 }}>
+                        {new Date(e.eingestempelt_am).toLocaleDateString('de-DE')} · {new Date(e.eingestempelt_am).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – {new Date(e.ausgestempelt_am).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      {e.notiz && <div style={{ fontSize: 11, color: '#888780', marginTop: 2 }}>{e.notiz}</div>}
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: '#444441', background: '#F1EFE8', padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>
+                      {formatDauer(e.eingestempelt_am, e.ausgestempelt_am)}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => starteBearbeiten(e)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#EEEDFE', color: '#534AB7', border: '0.5px solid #AFA9EC', cursor: 'pointer' }}>Korrigieren</button>
+                    <button onClick={() => { setLoeschenId(e.id); setBearbeitenId(null) }} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 7, background: '#FDECEB', color: '#C0392B', border: '0.5px solid #F5C6C2', cursor: 'pointer' }}>Löschen</button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
