@@ -25,8 +25,7 @@ export default function Dashboard() {
         .in('objekt_id', objektIds)
         .order('faellig_am', { ascending: false })
       setAufgaben(a || [])
-      console.log('AUFGABEN geladen:', a, 'Objekt-IDs:', objektIds)
-
+    
   useEffect(() => {
     if (profil?.id) ladeDaten()
   }, [profil])
