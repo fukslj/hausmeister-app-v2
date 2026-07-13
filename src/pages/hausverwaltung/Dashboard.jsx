@@ -18,6 +18,14 @@ export default function Dashboard() {
   const [neu, setNeu] = useState({ eingang_id: '', beschreibung: '', foto: null, fotoPreview: null })
   const [senden, setSenden] = useState(false)
   const [fehler, setFehler] = useState('')
+  const { data: a } = await supabase
+        .from('aufgabenplan')
+        .select('*, objekt(strasse, hausnummer), techniker(name)')
+        .eq('status', 'erledigt')
+        .in('objekt_id', objektIds)
+        .order('faellig_am', { ascending: false })
+      setAufgaben(a || [])
+      console.log('AUFGABEN geladen:', a, 'Objekt-IDs:', objektIds)
 
   useEffect(() => {
     if (profil?.id) ladeDaten()
@@ -54,6 +62,7 @@ export default function Dashboard() {
         .in('objekt_id', objektIds)
         .order('faellig_am', { ascending: false })
       setAufgaben(a || [])
+      console.log('AUFGABEN geladen:', a, 'Objekt-IDs:', objektIds)
     }
     setLaden(false)
   }
