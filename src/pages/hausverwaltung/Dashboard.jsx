@@ -16,6 +16,8 @@ export default function Dashboard() {
   const [neu, setNeu] = useState({ eingang_id: '', beschreibung: '', foto: null, fotoPreview: null })
   const [senden, setSenden] = useState(false)
   const [fehler, setFehler] = useState('')
+  const [ansicht, setAnsicht] = useState('meldungen')
+  const [aufgaben, setAufgaben] = useState([])
 
   useEffect(() => {
     if (profil?.id) ladeDaten()
@@ -43,6 +45,16 @@ export default function Dashboard() {
         .in('objekt_id', objektListe.map(o => o.id))
         .eq('aktiv', true)
       setEingaenge(e || [])
+    }
+    // Erledigte Aufgabenplan-Einträge für die Objekte laden
+    if (objektListe.length > 0) {
+      const { data: a } = await supabase
+        .from('aufgabenplan')
+        .select('*, objekt(strasse, hausnummer), techniker(name)')
+        .eq('status', 'erledigt')
+        .in('objekt_id', objektListe.map(o => o.id))
+        .order('faellig_am', { ascending: false })
+      setAufgaben(a || [])
     }
     setLaden(false)
   }
@@ -188,7 +200,17 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-
+        
+        {/* Ansicht-Umschalter */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          <button onClick={() => setAnsicht('meldungen')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, cursor: 'pointer', background: ansicht === 'meldungen' ? '#534AB7' : '#EEEDFE', color: ansicht === 'meldungen' ? '#EEEDFE' : '#534AB7', border: '0.5px solid #AFA9EC' }}>
+            Meldungen
+          </button>
+          <button onClick={() => setAnsicht('aufgaben')} style={{ flex: 1, fontSize: 12, fontWeight: 500, padding: '8px 0', borderRadius: 8, cursor: 'pointer', background: ansicht === 'aufgaben' ? '#534AB7' : '#EEEDFE', color: ansicht === 'aufgaben' ? '#EEEDFE' : '#534AB7', border: '0.5px solid #AFA9EC' }}>
+            Erledigte Aufgaben
+          </button>
+        </div>
+        
         {/* Meine Objekte */}
         {objekte.length > 0 && (
           <div style={{ marginBottom: 20 }}>
