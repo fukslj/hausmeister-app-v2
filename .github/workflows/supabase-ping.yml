@@ -1,0 +1,18 @@
+name: Supabase Ping
+
+on:
+  schedule:
+    # Läuft täglich um 6:00 UTC (8:00 deutscher Sommerzeit)
+    - cron: '0 6 * * *'
+  workflow_dispatch:   # erlaubt manuelles Auslösen zum Testen
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
+            "https://lexqxasmvhervugpdtev.supabase.co/rest/v1/objekt?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
