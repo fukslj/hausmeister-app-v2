@@ -17,10 +17,8 @@ export default function Dashboard() {
   const [formOffen, setFormOffen] = useState(false)
   const [neu, setNeu] = useState({ eingang_id: '', beschreibung: '', foto: null, fotoPreview: null })
   const [senden, setSenden] = useState(false)
-    const [fehler, setFehler] = useState('')
+  const [fehler, setFehler] = useState('')
 
-  useEffect(() => {
-    
   useEffect(() => {
     if (profil?.id) ladeDaten()
   }, [profil])
@@ -237,7 +235,6 @@ export default function Dashboard() {
         {/* ===== MELDUNGEN-ANSICHT ===== */}
         {ansicht === 'meldungen' && (
           <>
-            {/* Filter */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
               {['alle', 'offen', 'in_arbeit', 'erledigt'].map(f => (
                 <button key={f} onClick={() => setFilter(f)} style={{ fontSize: 11, fontWeight: 500, padding: '4px 12px', borderRadius: 20, border: '0.5px solid', cursor: 'pointer', background: filter === f ? '#534AB7' : 'transparent', color: filter === f ? '#EEEDFE' : '#888780', borderColor: filter === f ? '#534AB7' : '#D3D1C7' }}>
